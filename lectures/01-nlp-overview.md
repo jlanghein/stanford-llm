@@ -45,9 +45,17 @@ flowchart LR
     G --> G1["1 input → new text"]
 ```
 
+| Task Type | Pattern | Jump to Details |
+|-----------|---------|-----------------|
+| **Classification** | 1 input → 1 label | [See examples](#1-classification) |
+| **Multi-Classification** | 1 input → N labels | [See examples](#2-multi-classification-sequence-labeling) |
+| **Generation** | 1 input → new text | [See examples](#3-generation) |
+
 ---
 
 ### 1. Classification
+
+[Back to NLP Tasks Overview](#nlp-tasks-overview)
 
 ```mermaid
 flowchart LR
@@ -87,6 +95,8 @@ mindmap
 ---
 
 ### 2. Multi-Classification (Sequence Labeling)
+
+[Back to NLP Tasks Overview](#nlp-tasks-overview)
 
 ```mermaid
 flowchart LR
@@ -157,6 +167,8 @@ flowchart TB
 ---
 
 ### 3. Generation
+
+[Back to NLP Tasks Overview](#nlp-tasks-overview)
 
 ```mermaid
 flowchart LR
