@@ -4,6 +4,31 @@
 
 ---
 
+## Table of Contents
+
+- [NLP Tasks Overview](#nlp-tasks-overview)
+  - [1. Classification](#1-classification)
+  - [2. Multi-Classification (Sequence Labeling)](#2-multi-classification-sequence-labeling)
+  - [3. Generation](#3-generation)
+- [NLP Landscape](#nlp-landscape)
+  - [Model Architecture Evolution](#model-architecture-evolution)
+  - [Transformer Architecture Types](#transformer-architecture-types)
+  - [Prompting Techniques](#prompting-techniques)
+  - [RAG (Retrieval-Augmented Generation)](#rag-retrieval-augmented-generation)
+- [Training Strategies](#training-strategies)
+  - [The Modern LLM Training Pipeline](#the-modern-llm-training-pipeline)
+  - [RLHF Pipeline (Detailed)](#rlhf-pipeline-detailed)
+  - [DPO vs RLHF](#dpo-vs-rlhf)
+- [Common Tasks (Visual Reference)](#common-tasks-visual-reference)
+- [Benchmark Datasets](#benchmark-datasets)
+- [Evaluation Metrics](#evaluation-metrics)
+  - [Metrics by Task Type](#metrics-by-task-type)
+  - [Understanding Key Metrics](#understanding-key-metrics)
+- [Summary: The Big Picture](#summary-the-big-picture)
+- [Quick Reference Card](#quick-reference-card)
+
+---
+
 ## NLP Tasks Overview
 
 ```mermaid
