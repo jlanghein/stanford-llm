@@ -230,6 +230,19 @@ flowchart LR
     F["the dog sat"] --> A
 ```
 
+**Example Co-occurrence Matrix** (window size = 1):
+
+```
+           the    cat    sat    dog    ran
+    the  [  0      2      1      1      0  ]
+    cat  [  2      0      1      0      1  ]
+    sat  [  1      1      0      1      0  ]
+    dog  [  1      0      1      0      0  ]
+    ran  [  0      1      0      0      0  ]
+```
+
+Notice: "cat" and "sat" co-occur once, "the" and "cat" co-occur twice, etc.
+
 **Contextual Embeddings (ELMo, BERT)**
 - Same word can have different embeddings based on context
 - "bank" (financial) vs "bank" (river) get different representations
@@ -269,6 +282,23 @@ flowchart LR
     
     T1 --> T2 --> M --> V
 ```
+
+**Example Embedding Matrix** (simplified):
+
+```
+Token ID    →   Embedding Vector (768 dims)
+─────────────────────────────────────────────────
+   0 [PAD]  →   [ 0.00,  0.00,  0.00, ... ]
+   1 [UNK]  →   [ 0.02, -0.01,  0.03, ... ]
+   2 "the"  →   [ 0.12, -0.45,  0.78, ... ]
+   3 "cat"  →   [ 0.85,  0.32, -0.19, ... ]
+   ...
+7592 "hello"→   [ 0.42, -0.18,  0.65, ... ]  ← lookup row 7592
+   ...
+50000       →   [ ... ]
+```
+
+Each row is a learned vector. Looking up token ID 7592 retrieves that row.
 
 ---
 
