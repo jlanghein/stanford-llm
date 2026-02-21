@@ -300,6 +300,27 @@ Token ID    →   Embedding Vector (768 dims)
 
 Each row is a learned vector. Looking up token ID 7592 retrieves that row.
 
+**What do those 768 dimensions represent?**
+
+Each dimension captures some learned feature. While not directly interpretable, they might encode things like:
+
+```
+Dimension   Possible Meaning (hypothetical)
+─────────────────────────────────────────────────
+dim[0]      formality level (+formal, -casual)
+dim[1]      concreteness (+concrete, -abstract)
+dim[2]      sentiment (+positive, -negative)
+dim[3]      animacy (+living, -non-living)
+...
+dim[127]    verb-ness (+verb-like, -noun-like)
+...
+dim[450]    topic: technology-related
+...
+dim[767]    frequency in training data
+```
+
+In practice, dimensions are entangled and not cleanly interpretable—the model learns whatever features help it predict best.
+
 ---
 
 ## Quick Reference Card
