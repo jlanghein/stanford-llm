@@ -220,10 +220,10 @@ quadrantChart
     title Tokenization Method Trade-offs
     x-axis Low Vocabulary Size --> High Vocabulary Size
     y-axis Long Sequences --> Short Sequences
-    quadrant-1 Arbitrary: compact but huge vocab
-    quadrant-2 Word: simple but OOV issues
-    quadrant-3 Character: robust but slow
-    quadrant-4 Subword: balanced sweet spot
+    quadrant-1 Arbitrary - compact but huge vocab
+    quadrant-2 Word - simple but OOV issues
+    quadrant-3 Character - robust but slow
+    quadrant-4 Subword - balanced sweet spot
     Character: [0.15, 0.1]
     Subword: [0.45, 0.5]
     Word: [0.75, 0.8]
