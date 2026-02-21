@@ -201,19 +201,74 @@ Modern approaches learn embeddings from data:
 - Learn dense 300-dimensional vectors
 - Fast and efficient
 
+```mermaid
+flowchart LR
+    subgraph skip["Skip-gram"]
+        W["cat"] --> C1["the"]
+        W --> C2["fluffy"]
+        W --> C3["sat"]
+    end
+    
+    subgraph cbow["CBOW"]
+        X1["the"] --> T["cat"]
+        X2["fluffy"] --> T
+        X3["sat"] --> T
+    end
+```
+
 **GloVe (Global Vectors)**
 - Combine count-based and prediction-based methods
 - Capture global word co-occurrence statistics
+
+```mermaid
+flowchart LR
+    A["Word-Word<br/>Co-occurrence Matrix"] --> B["Matrix<br/>Factorization"]
+    B --> C["Word Vectors"]
+    
+    D["the cat sat"] --> A
+    E["a cat ran"] --> A
+    F["the dog sat"] --> A
+```
 
 **Contextual Embeddings (ELMo, BERT)**
 - Same word can have different embeddings based on context
 - "bank" (financial) vs "bank" (river) get different representations
 - Much more powerful than fixed embeddings
 
+```mermaid
+flowchart TB
+    S1["I deposited money at the <b>bank</b>"]
+    S2["I fished by the river <b>bank</b>"]
+    
+    S1 --> V1["bank = [0.8, -0.2, 0.5, ...]"]
+    S2 --> V2["bank = [-0.3, 0.7, 0.1, ...]"]
+    
+    V1 -.- N1["financial context"]
+    V2 -.- N2["nature context"]
+```
+
 **Transformer Embeddings**
 - All modern LLMs use learned embeddings
 - Token → Embedding matrix → Dense vector
 - Trained end-to-end with the model
+
+```mermaid
+flowchart LR
+    subgraph input["Input"]
+        T1["Token: 'hello'"]
+        T2["ID: 7592"]
+    end
+    
+    subgraph embed["Embedding Layer"]
+        M["Embedding Matrix<br/>50K x 768"]
+    end
+    
+    subgraph output["Output"]
+        V["Vector: [0.12, -0.45, 0.78, ...]<br/>768 dimensions"]
+    end
+    
+    T1 --> T2 --> M --> V
+```
 
 ---
 
