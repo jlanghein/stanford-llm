@@ -54,17 +54,20 @@ flowchart LR
 
 [Back to Table of Contents](#table-of-contents)
 
-```mermaid
-flowchart LR
-    CHAR["Character"] --> SUB["Subword"] --> WORD["Word"] --> ARB["Arbitrary"]
-    
-    CHAR -.- C1["Finest granularity"]
-    ARB -.- C2["Coarsest granularity"]
-    
-    style CHAR fill:#bbdefb
-    style SUB fill:#c8e6c9
-    style WORD fill:#fff9c4
-    style ARB fill:#ffcdd2
+From finest to coarsest granularity:
+
+```
+Fine-grained                                              Coarse-grained
+     |                                                           |
+     v                                                           v
++-----------+     +-----------+     +-----------+     +-----------+
+| Character |     |  Subword  |     |   Word    |     | Arbitrary |
++-----------+     +-----------+     +-----------+     +-----------+
+   [c][a][t]       [read][##ing]    [reading]         [teddy bear]
+                                                         
+  tiny vocab       medium vocab     large vocab        huge vocab
+  long sequences   medium length    short sequences    very short
+  no OOV           low OOV          high OOV           medium OOV
 ```
 
 **The Fundamental Trade-off:**
