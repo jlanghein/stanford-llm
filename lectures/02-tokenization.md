@@ -55,7 +55,7 @@ flowchart TB
         direction TB
         V["Vocabulary Size<br/>How many unique tokens?"]
         S["Sequence Length<br/>How many tokens per input?"]
-        O["OOV Handling<br/>What about unknown words?"]
+        O["OOV (Out-of-Vocabulary) Handling<br/>What about unknown words?"]
         G["Generalization<br/>Can model handle new words?"]
     end
     
@@ -66,6 +66,8 @@ flowchart TB
     
     style impact fill:#e3f2fd
 ```
+
+> **OOV (Out-of-Vocabulary):** When a model encounters a word it has never seen during training, it cannot process it. This is the OOV problem. For example, if a model was trained on "happy" and "happiness" but never saw "happily", it treats "happily" as unknown and replaces it with a special `[UNK]` token, losing all meaning. Different tokenization strategies handle OOV differently.
 
 ---
 
