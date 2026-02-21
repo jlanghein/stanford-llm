@@ -61,40 +61,40 @@ teddy bear  = [0, 0, 1]
 
 One-hot vectors lie on the axes of a high-dimensional space, completely independent of each other.
 
-```mermaid
-flowchart LR
-    subgraph onehot["One-Hot Vector Space"]
-        direction TB
-        
-        subgraph vecs["Vectors"]
-            V1["soft = [1, 0, 0]"]
-            V2["book = [0, 1, 0]"]
-            V3["teddy bear = [0, 0, 1]"]
-        end
-        
-        subgraph props["Properties"]
-            P1["✓ Sparse (mostly zeros)"]
-            P2["✗ Orthogonal (perpendicular)"]
-            P3["✗ No similarity captured"]
-        end
-        
-        vecs --> props
-    end
-    
-    style V1 fill:#bbdefb
-    style V2 fill:#fff9c4
-    style V3 fill:#ffcdd2
-    style props fill:#e3f2fd
-```
-
-**Similarity between any two words:**
+**3D coordinate system with one-hot vectors:**
 
 ```
-Cosine Similarity = Dot Product of normalized vectors
+                    teddy bear
+                          |
+                          |
+                        (0,0,1) *
+                         /|
+                        / |
+                       /  |
+                      /   |
+                     /    |
+        (0,1,0) ────*─────┼──→ soft (1,0,0)
+         /     book |     /
+        /           |    /
+       /            |   /
+      /             |  /
+     /              | /
+    /               |/
+   /________________/
 
-soft · book       = [1,0,0] · [0,1,0] = 1*0 + 0*1 + 0*0 = 0
-soft · teddy bear = [1,0,0] · [0,0,1] = 1*0 + 0*0 + 0*1 = 0
-book · teddy bear = [0,1,0] · [0,0,1] = 0*0 + 1*0 + 0*1 = 0
+One-hot vectors sit on the axes - they're perpendicular to each other!
+```
+
+**Why orthogonal = zero similarity:**
+
+Each word is represented on its own axis, so the dot product is always 0:
+
+```
+soft · book       = [1,0,0] · [0,1,0] = 0
+soft · teddy bear = [1,0,0] · [0,0,1] = 0
+book · teddy bear = [0,1,0] · [0,0,1] = 0
+
+Cosine similarity = dot product / (length1 × length2) = 0 / (1 × 1) = 0
 ```
 
 **Result:** All word pairs have similarity = 0. Even semantically related words (teddy bear + soft) look completely unrelated!
@@ -156,39 +156,37 @@ Embedding: dense, low-dimensional, semantic
 
 In embedding space, semantically similar words cluster together:
 
-```mermaid
-flowchart TB
-    subgraph embed["Dense Embedding Space (2D example)"]
-        direction TB
-        
-        subgraph sentiment["Sentiment Axis"]
-            HAP["😊 happy<br/>0.8, 0.2"]
-            CHEER["😊 cheerful<br/>0.7, 0.1"]
-            GLAD["😊 glad<br/>0.75, 0.15"]
-        end
-        
-        subgraph rank["Royalty Axis"]
-            KING["👑 king<br/>0.1, 0.8"]
-            QUEEN["👑 queen<br/>0.15, 0.75"]
-            PRINCE["👑 prince<br/>0.2, 0.85"]
-        end
-        
-        subgraph neutral["Neutral"]
-            DOG["🐕 dog<br/>0.3, 0.4"]
-            CAR["🚗 car<br/>0.5, 0.3"]
-        end
-        
-        sentiment -->|"Similar<br/>vectors"| CHEER
-        rank -->|"Similar<br/>vectors"| QUEEN
-        neutral -->|"Different<br/>vectors"| CAR
-    end
-    
-    style sentiment fill:#c8e6c9
-    style rank fill:#bbdefb
-    style neutral fill:#fff9c4
+```
+                 Positive/Happy Axis
+                          |
+                          |
+                    happy * (0.8, 0.2)
+                   /     cheerful * (0.7, 0.1)
+                  /            glad * (0.75, 0.15)
+                 /              |
+                /               |
+               /                |
+              /            Related words
+             /             cluster TOGETHER
+            /
+───────────┼─────────────────→ Royalty Axis
+          /|
+         / |
+        /  |
+    king * |  (0.1, 0.8)
+   /   queen * (0.15, 0.75)
+  /       prince * (0.2, 0.85)
+ /
+/    dog * (0.3, 0.4)
+         car * (0.5, 0.3)
+         
+Key: Similar words have similar coordinates (close in space)
+     Different words are far apart
 ```
 
-**Key insight:** Words with similar meanings have similar embeddings (close in vector space)
+**Contrast with one-hot:**
+- One-hot: all words at 90° angles (completely independent)
+- Embeddings: similar words at small angles (semantically related)
 
 ---
 
