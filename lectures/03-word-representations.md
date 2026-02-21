@@ -61,32 +61,43 @@ teddy bear  = [0, 0, 1]
 
 One-hot vectors lie on the axes of a high-dimensional space, completely independent of each other.
 
-**3-word vocabulary in 3D space:**
+```mermaid
+flowchart LR
+    subgraph onehot["One-Hot Vector Space"]
+        direction TB
+        
+        subgraph vecs["Vectors"]
+            V1["soft = [1, 0, 0]"]
+            V2["book = [0, 1, 0]"]
+            V3["teddy bear = [0, 0, 1]"]
+        end
+        
+        subgraph props["Properties"]
+            P1["✓ Sparse (mostly zeros)"]
+            P2["✗ Orthogonal (perpendicular)"]
+            P3["✗ No similarity captured"]
+        end
+        
+        vecs --> props
+    end
+    
+    style V1 fill:#bbdefb
+    style V2 fill:#fff9c4
+    style V3 fill:#ffcdd2
+    style props fill:#e3f2fd
+```
+
+**Similarity between any two words:**
 
 ```
-        teddy bear
-              ↑
-              |
-              * (0,0,1)
-             /
-            /
-           /
-          /─────→ soft (1,0,0)
-         /
-        /
-       book (0,1,0)
-      /
+Cosine Similarity = Dot Product of normalized vectors
+
+soft · book       = [1,0,0] · [0,1,0] = 1*0 + 0*1 + 0*0 = 0
+soft · teddy bear = [1,0,0] · [0,0,1] = 1*0 + 0*0 + 0*1 = 0
+book · teddy bear = [0,1,0] · [0,0,1] = 0*0 + 1*0 + 0*1 = 0
 ```
 
-When we compute **dot product** (cosine similarity) between words:
-
-```
-⟨soft, book⟩         = 1*0 + 0*1 + 0*0 = 0
-⟨soft, teddy bear⟩   = 1*0 + 0*0 + 0*1 = 0
-⟨book, teddy bear⟩   = 0*0 + 1*0 + 0*1 = 0
-```
-
-**Result:** All word pairs are equally similar (similarity = 0). No semantic relationship captured!
+**Result:** All word pairs have similarity = 0. Even semantically related words (teddy bear + soft) look completely unrelated!
 
 ### Why One-Hot Fails
 
@@ -143,26 +154,41 @@ Embedding: dense, low-dimensional, semantic
 
 **Example with 2D embeddings:**
 
+In embedding space, semantically similar words cluster together:
+
+```mermaid
+flowchart TB
+    subgraph embed["Dense Embedding Space (2D example)"]
+        direction TB
+        
+        subgraph sentiment["Sentiment Axis"]
+            HAP["😊 happy<br/>0.8, 0.2"]
+            CHEER["😊 cheerful<br/>0.7, 0.1"]
+            GLAD["😊 glad<br/>0.75, 0.15"]
+        end
+        
+        subgraph rank["Royalty Axis"]
+            KING["👑 king<br/>0.1, 0.8"]
+            QUEEN["👑 queen<br/>0.15, 0.75"]
+            PRINCE["👑 prince<br/>0.2, 0.85"]
+        end
+        
+        subgraph neutral["Neutral"]
+            DOG["🐕 dog<br/>0.3, 0.4"]
+            CAR["🚗 car<br/>0.5, 0.3"]
+        end
+        
+        sentiment -->|"Similar<br/>vectors"| CHEER
+        rank -->|"Similar<br/>vectors"| QUEEN
+        neutral -->|"Different<br/>vectors"| CAR
+    end
+    
+    style sentiment fill:#c8e6c9
+    style rank fill:#bbdefb
+    style neutral fill:#fff9c4
 ```
-      happy
-        ↑
-        |
-        * "cheerful"
-       /|
-      / |
-     /  * "glad"
-    /   |
-───*────┼──→ positive
-  /     |
- /      |
-king *  |
-   /    |
-  /  * queen
- /     /
-*─────/──→ royal
-/    *
-/   prince
-```
+
+**Key insight:** Words with similar meanings have similar embeddings (close in vector space)
 
 ---
 
