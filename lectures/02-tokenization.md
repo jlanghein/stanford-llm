@@ -203,6 +203,12 @@ Count:  6 tokens (phrase "teddy bear" merged!)
 
 **Cons:** Huge vocabulary, generalization suffers, overfits to training data
 
+**Overfitting example:**
+```
+If training data had "teddy bear" 10,000 times → becomes single token [teddy bear]
+But "teddy bears" → [teddy bear][s]  ✗ Awkward, doesn't generalize
+```
+
 **Think:** Data-driven chunking without linguistic rules
 
 ---
