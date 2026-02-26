@@ -389,50 +389,271 @@ In the next step (7.3 Masked Self Attention), each token's Query will be compare
 
 #### 7.2 Why Multiple Heads?
 
-Each head works with smaller vectors (64 dimensions instead of 768). GPT-2 has **12 heads**, and `12 × 64 = 768`.
+Instead of one big attention mechanism, GPT-2 uses **12 smaller ones running in parallel**. Each head works with 64 dimensions instead of 768, and `12 × 64 = 768`.
 
-Why multiple heads? Each head can specialize in different patterns:
+**Why split into multiple heads?**
 
-| Head | Might learn to track |
-|------|---------------------|
-| Head 1 | Subject-verb relationships |
-| Head 2 | Adjective-noun pairs |
-| Head 3 | Long-range references |
-| Head 4 | Punctuation patterns |
-| ... | ... |
+Different heads can specialize in different patterns. Think of it like having 12 experts, each looking for different relationships in the sentence.
 
-This lets the model capture many types of relationships simultaneously.
+**Example with `Mein Name ist Johannes`:**
+
+| Head | What it might specialize in | What it notices in our sentence |
+|------|----------------------------|--------------------------------|
+| Head 1 | Grammar structure | "ist" connects "Name" to "Johannes" (copula verb pattern) |
+| Head 2 | Word parts | "Me" + "in" form "Mein", "is" + "t" form "ist" |
+| Head 3 | Noun-name relationships | "Name" and "Johannes" are semantically linked |
+| Head 4 | Position patterns | First token "Me" is likely start of a noun phrase |
+| Head 5 | Language detection | German word patterns (capitalized nouns, verb position) |
+| ... | ... | ... |
+| Head 12 | Long-range dependencies | (not much in this short sentence) |
+
+**How the split works (continuing from section 7.1):**
+
+In Step 6 of section 7.1, we reshaped our Q, K, V matrices for 12 heads. Here's what Head 1 and Head 2 get:
+
+**Head 1 uses dimensions 1-64:**
+
+| Token | Q (dims 1-64) | K (dims 1-64) | V (dims 1-64) |
+|-------|---------------|---------------|---------------|
+| `Me` | [0.45, -0.23, ..., 0.18] | [0.34, 0.56, ..., -0.12] | [0.67, 0.23, ..., 0.31] |
+| `in` | [0.23, 0.12, ..., -0.09] | [0.18, -0.29, ..., 0.25] | [0.31, -0.15, ..., 0.22] |
+| `Name` | [1.23, 0.89, ..., 0.45] | [1.45, 0.72, ..., 0.38] | [0.92, 0.48, ..., 0.55] |
+| `is` | [0.34, -0.45, ..., 0.11] | [0.28, 0.19, ..., -0.21] | [0.43, 0.22, ..., 0.18] |
+| `t` | [0.19, 0.08, ..., -0.15] | [0.15, -0.22, ..., 0.19] | [0.25, -0.18, ..., 0.27] |
+| `Johannes` | [1.18, 0.95, ..., 0.52] | [1.52, 0.81, ..., 0.45] | [0.98, 0.53, ..., 0.61] |
+
+**Head 2 uses dimensions 65-128:**
+
+| Token | Q (dims 65-128) | K (dims 65-128) | V (dims 65-128) |
+|-------|-----------------|-----------------|-----------------|
+| `Me` | [0.12, -0.34, ..., 0.21] | [0.23, 0.11, ..., -0.08] | [0.45, 0.12, ..., 0.33] |
+| `in` | [0.08, 0.19, ..., -0.14] | [0.31, -0.15, ..., 0.22] | [0.28, -0.09, ..., 0.19] |
+| `Name` | [0.67, 0.42, ..., 0.33] | [0.58, 0.35, ..., 0.28] | [0.71, 0.38, ..., 0.42] |
+| ... | ... | ... | ... |
+
+Each head processes its 64 dimensions **independently** through attention (section 7.3), then the results are combined (section 7.4).
+
+**The key insight:** By having multiple heads, the model doesn't have to choose between tracking grammar OR meaning OR word structure — it can do all of them simultaneously in different heads.
 
 #### 7.3 Masked Self Attention
 
-In each head, attention scores determine how much each token focuses on others:
+Now each head computes attention scores — determining how much each token should "pay attention to" every other token. Let's trace through Head 1 step by step.
 
-1. **Dot Product** — Multiply Query with each Key to get raw attention scores
-2. **Mask** — Hide future tokens (set scores to -∞) so the model can't "peek ahead"
-3. **Softmax** — Convert scores to probabilities (each row sums to 1)
+---
 
-**Example:** For `Mein Name ist Johannes`, the attention matrix might look like:
+**Step 1: Compute raw attention scores (Q × K^T)**
+
+Each token's Query asks: "Who has information I need?" We compare it against every Key by computing dot products.
+
+For **"Johannes"** (row 6), we compute how much it should attend to each previous token:
+
+| Johannes Q · | Token Key | Calculation (64 values each) | Raw Score |
+|--------------|-----------|------------------------------|-----------|
+| Johannes Q · | Me K | (1.18 × 0.34) + (0.95 × 0.56) + ... | 12.4 |
+| Johannes Q · | in K | (1.18 × 0.18) + (0.95 × -0.29) + ... | 8.2 |
+| Johannes Q · | Name K | (1.18 × 1.45) + (0.95 × 0.72) + ... | **45.8** |
+| Johannes Q · | is K | (1.18 × 0.28) + (0.95 × 0.19) + ... | 15.1 |
+| Johannes Q · | t K | (1.18 × 0.15) + (0.95 × -0.22) + ... | 9.3 |
+| Johannes Q · | Johannes K | (1.18 × 1.52) + (0.95 × 0.81) + ... | 38.2 |
+
+**Key insight:** "Johannes" has the highest raw score with "Name" (45.8) because their Q and K vectors are similar — both are nouns referring to people, so the learned weights produced similar patterns.
+
+---
+
+**Step 2: Scale the scores**
+
+Raw scores can get very large (we're summing 64 multiplications). Large values cause problems with softmax, so we divide by √64 = 8:
+
+| Token pair | Raw Score | ÷ 8 | Scaled Score |
+|------------|-----------|-----|--------------|
+| Johannes → Me | 12.4 | ÷ 8 | 1.55 |
+| Johannes → in | 8.2 | ÷ 8 | 1.03 |
+| Johannes → Name | 45.8 | ÷ 8 | **5.73** |
+| Johannes → is | 15.1 | ÷ 8 | 1.89 |
+| Johannes → t | 9.3 | ÷ 8 | 1.16 |
+| Johannes → Johannes | 38.2 | ÷ 8 | 4.78 |
+
+---
+
+**Step 3: Apply the mask (hide future tokens)**
+
+This is **causal masking** — a token can only attend to tokens that came before it (including itself). This prevents "cheating" during training by looking at future words.
+
+For each row, we set future positions to -∞:
+
+| Token | Can see | Masked (set to -∞) |
+|-------|---------|-------------------|
+| `Me` (pos 0) | Me | in, Name, is, t, Johannes |
+| `in` (pos 1) | Me, in | Name, is, t, Johannes |
+| `Name` (pos 2) | Me, in, Name | is, t, Johannes |
+| `is` (pos 3) | Me, in, Name, is | t, Johannes |
+| `t` (pos 4) | Me, in, Name, is, t | Johannes |
+| `Johannes` (pos 5) | Me, in, Name, is, t, Johannes | (none — it's last) |
+
+**The full scaled + masked score matrix (6 × 6):**
 
 |  | Me | in | Name | is | t | Johannes |
 |--|----|----|------|----|---|----------|
-| **Me** | 0.8 | 0.2 | - | - | - | - |
-| **in** | 0.3 | 0.7 | - | - | - | - |
-| **Name** | 0.1 | 0.2 | 0.7 | - | - | - |
-| **is** | 0.1 | 0.1 | 0.3 | 0.5 | - | - |
-| **t** | 0.1 | 0.1 | 0.2 | 0.4 | 0.2 | - |
-| **Johannes** | 0.1 | 0.1 | 0.5 | 0.1 | 0.1 | 0.1 |
+| **Me** | 2.1 | -∞ | -∞ | -∞ | -∞ | -∞ |
+| **in** | 1.8 | 2.4 | -∞ | -∞ | -∞ | -∞ |
+| **Name** | 1.2 | 1.5 | 4.2 | -∞ | -∞ | -∞ |
+| **is** | 1.1 | 0.9 | 2.8 | 3.1 | -∞ | -∞ |
+| **t** | 0.8 | 1.0 | 1.9 | 3.5 | 1.7 | -∞ |
+| **Johannes** | 1.55 | 1.03 | **5.73** | 1.89 | 1.16 | 4.78 |
 
-The `-` entries are masked (future tokens). Notice `Johannes` attends strongly to `Name` (0.5).
+---
+
+**Step 4: Softmax (convert to probabilities)**
+
+Softmax converts each row into probabilities that sum to 1. The -∞ values become 0 (e^(-∞) = 0).
+
+**Formula:** For each row, probability = e^(score) / sum(e^(all scores in row))
+
+**For "Johannes" row:**
+
+| Token | Scaled Score | e^score | Probability |
+|-------|--------------|---------|-------------|
+| Me | 1.55 | 4.71 | 4.71 / 659.5 = 0.007 |
+| in | 1.03 | 2.80 | 2.80 / 659.5 = 0.004 |
+| Name | **5.73** | **307.6** | 307.6 / 659.5 = **0.466** |
+| is | 1.89 | 6.62 | 6.62 / 659.5 = 0.010 |
+| t | 1.16 | 3.19 | 3.19 / 659.5 = 0.005 |
+| Johannes | 4.78 | 119.1 | 119.1 / 659.5 = 0.181 |
+| | | **Sum: 659.5** | **Sum: 1.000** |
+
+---
+
+**Step 5: The final attention matrix (for Head 1)**
+
+After applying softmax to all rows:
+
+|  | Me | in | Name | is | t | Johannes | Row sum |
+|--|----|----|------|----|---|----------|---------|
+| **Me** | 1.00 | 0 | 0 | 0 | 0 | 0 | 1.0 |
+| **in** | 0.35 | 0.65 | 0 | 0 | 0 | 0 | 1.0 |
+| **Name** | 0.08 | 0.12 | 0.80 | 0 | 0 | 0 | 1.0 |
+| **is** | 0.06 | 0.05 | 0.35 | 0.54 | 0 | 0 | 1.0 |
+| **t** | 0.05 | 0.06 | 0.15 | 0.58 | 0.16 | 0 | 1.0 |
+| **Johannes** | 0.01 | 0.01 | **0.47** | 0.01 | 0.01 | 0.18 | 1.0 |
+
+**Reading this matrix:**
+- Each row shows how one token distributes its attention
+- "Johannes" pays 47% attention to "Name" — the strongest connection!
+- "Me" can only see itself, so it's 100% self-attention
+- The 0s are masked positions (future tokens)
+
+**Why does "Johannes" attend strongly to "Name"?**
+
+Because their Q and K vectors matched well:
+- "Name" announces (via K): "I'm a noun that labels something"
+- "Johannes" asks (via Q): "Who is asking for a name?"
+- The dot product is high → strong attention
 
 #### 7.4 Attention Output & Concatenation
 
-Each head multiplies its attention scores with the Value embeddings to produce an **attention output** — a refined representation of each token after considering context.
+Now we use the attention weights to actually gather information. Each token collects a weighted mix of Value vectors from the tokens it attends to.
 
-GPT-2's 12 heads each produce a 64-dimensional output. These are **concatenated** back to 768 dimensions:
+---
 
-```
-[Head 1 output (64)] + [Head 2 output (64)] + ... + [Head 12 output (64)] = [768]
-```
+**Step 1: Multiply attention weights × Values**
+
+For each token, we compute: **output = sum(attention_weight × Value)** for all attended tokens.
+
+**For "Johannes" in Head 1:**
+
+Remember "Johannes" attention weights: Me=0.01, in=0.01, Name=0.47, is=0.01, t=0.01, Johannes=0.18
+
+| Attended Token | Attention Weight | × | Value (64 dims) | = | Weighted Contribution |
+|----------------|------------------|---|-----------------|---|----------------------|
+| Me | 0.01 | × | [0.67, 0.23, ..., 0.31] | = | [0.007, 0.002, ..., 0.003] |
+| in | 0.01 | × | [0.31, -0.15, ..., 0.22] | = | [0.003, -0.002, ..., 0.002] |
+| **Name** | **0.47** | × | [0.92, 0.48, ..., 0.55] | = | **[0.432, 0.226, ..., 0.259]** |
+| is | 0.01 | × | [0.43, 0.22, ..., 0.18] | = | [0.004, 0.002, ..., 0.002] |
+| t | 0.01 | × | [0.25, -0.18, ..., 0.27] | = | [0.003, -0.002, ..., 0.003] |
+| Johannes | 0.18 | × | [0.98, 0.53, ..., 0.61] | = | [0.176, 0.095, ..., 0.110] |
+| | | | **SUM** | = | **[0.625, 0.321, ..., 0.379]** |
+
+**Key insight:** "Johannes"'s output is dominated by "Name"'s Value (47% weight) — the model is mixing "Name"'s meaning into "Johannes"'s representation. This is how context flows between related words!
+
+---
+
+**Step 2: Head 1 output for all tokens**
+
+Each token gets a 64-dimensional output from Head 1:
+
+| Token | Head 1 Output (64 dims) | Main influence (highest attention) |
+|-------|-------------------------|-----------------------------------|
+| `Me` | [0.67, 0.23, ..., 0.31] | Self only (100%) |
+| `in` | [0.45, -0.02, ..., 0.26] | Mostly self (65%) + Me (35%) |
+| `Name` | [0.78, 0.41, ..., 0.48] | Mostly self (80%) |
+| `is` | [0.62, 0.33, ..., 0.35] | Self (54%) + Name (35%) |
+| `t` | [0.51, 0.18, ..., 0.24] | is (58%) + self (16%) |
+| `Johannes` | [0.63, 0.32, ..., 0.38] | **Name (47%)** + self (18%) |
+
+---
+
+**Step 3: All 12 heads produce outputs in parallel**
+
+Each head runs the same attention process on its own 64 dimensions, potentially finding different patterns:
+
+| Head | Dimensions | What "Johannes" might learn from this head |
+|------|------------|-------------------------------------------|
+| Head 1 | 1-64 | Strong connection to "Name" (semantic) |
+| Head 2 | 65-128 | Connection to "ist" (grammar: verb complement) |
+| Head 3 | 129-192 | Self-attention dominant (word identity) |
+| Head 4 | 193-256 | "Me" + "in" pattern (German noun phrase) |
+| ... | ... | ... |
+| Head 12 | 705-768 | Position-based patterns |
+
+**Each head produces a (6 × 64) output matrix.**
+
+---
+
+**Step 4: Concatenate all heads**
+
+We join the 12 head outputs side by side to get back to 768 dimensions:
+
+| Token | Head 1 (64) | Head 2 (64) | Head 3 (64) | ... | Head 12 (64) | → Concatenated (768) |
+|-------|-------------|-------------|-------------|-----|--------------|---------------------|
+| `Me` | [0.67, ...] | [0.45, ...] | [0.32, ...] | ... | [0.28, ...] | [0.67, ..., 0.45, ..., 0.32, ..., 0.28, ...] |
+| `in` | [0.45, ...] | [0.38, ...] | [0.29, ...] | ... | [0.31, ...] | [0.45, ..., 0.38, ..., 0.29, ..., 0.31, ...] |
+| `Name` | [0.78, ...] | [0.52, ...] | [0.41, ...] | ... | [0.35, ...] | [0.78, ..., 0.52, ..., 0.41, ..., 0.35, ...] |
+| `is` | [0.62, ...] | [0.48, ...] | [0.37, ...] | ... | [0.33, ...] | [0.62, ..., 0.48, ..., 0.37, ..., 0.33, ...] |
+| `t` | [0.51, ...] | [0.44, ...] | [0.35, ...] | ... | [0.30, ...] | [0.51, ..., 0.44, ..., 0.35, ..., 0.30, ...] |
+| `Johannes` | [0.63, ...] | [0.55, ...] | [0.42, ...] | ... | [0.36, ...] | [0.63, ..., 0.55, ..., 0.42, ..., 0.36, ...] |
+
+**Result: (6 × 768) matrix** — same shape as the input!
+
+---
+
+**Step 5: Output projection**
+
+Finally, a learned **projection matrix W_o (768 × 768)** mixes information across heads:
+
+| Step | Shape | Description |
+|------|-------|-------------|
+| Concatenated heads | (6, 768) | 12 heads × 64 dims joined |
+| × W_o | (768, 768) | Learned projection matrix |
+| = Attention output | (6, 768) | Final attention output |
+
+This projection allows the model to combine insights from different heads — for example, Head 1's semantic knowledge + Head 2's grammatical knowledge.
+
+---
+
+**Summary: What attention accomplished**
+
+Before attention, each token only knew about itself. After attention:
+
+| Token | What it now knows (encoded in its 768-dim vector) |
+|-------|--------------------------------------------------|
+| `Me` | "I'm the start of a German word" |
+| `in` | "I complete 'Mein', a possessive determiner" |
+| `Name` | "I'm a noun, and 'Johannes' is the name I refer to" |
+| `is` | "I'm part of 'ist', connecting Name to Johannes" |
+| `t` | "I complete the verb 'ist'" |
+| `Johannes` | "I'm a proper name, answering what 'Name' refers to" |
+
+Each token's representation now contains **contextual information** from related tokens. This is the magic of self-attention!
 
 ------------------------------------------------------------------------
 
