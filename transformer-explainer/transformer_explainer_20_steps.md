@@ -13,13 +13,6 @@
 
 ## I. The Big Picture (What is happening?)
 
-**Goal:** Understand what the model is trying to do.
-
-**These sections answer:**
-- What is this?
-- What problem is it solving?
-- What are the main components?
-
 ### 1. What is Transformer?
 
 Transformer is the core architecture behind modern AI, powering models
