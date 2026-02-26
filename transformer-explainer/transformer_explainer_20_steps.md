@@ -185,64 +185,95 @@ In **multi-head** form, the model runs several attention processes in parallel (
 
 #### 7.1 Query, Key, Value
 
-To perform self-attention, each token's embedding is transformed into
-three new vectors — **Query**, **Key**, and **Value**:
+To perform self-attention, we need to transform each token's embedding into three vectors: **Query (Q)**, **Key (K)**, and **Value (V)**.
 
-- **Query (Q):** "What am I looking for?"
-- **Key (K):** "What do I contain?"
-- **Value (V):** "What information do I pass along?"
+Let's trace this step by step for our sentence `Mein Name ist Johannes`.
 
-**The Math: How Q, K, V are computed**
+**Step 1: Start with our input**
 
-Each Q, K, V vector is computed by multiplying the embedding with a learned weight matrix and adding a bias:
+After embedding + positional encoding, we have 6 tokens, each with 768 dimensions:
 
 ```
-Q_j = Σ(d=1 to 768) Embedding_d × W_Q[d,j] + Bias_Q[j]
-K_j = Σ(d=1 to 768) Embedding_d × W_K[d,j] + Bias_K[j]
-V_j = Σ(d=1 to 768) Embedding_d × W_V[d,j] + Bias_V[j]
+Input shape: (6, 768)
+
+Token 0 "Me":       [0.13, -0.43, 0.78, ..., -0.22]   (768 numbers)
+Token 1 "in":       [0.11, -0.42, 0.65, ..., -0.19]   (768 numbers)
+Token 2 "Name":     [0.17, 0.28, -0.54, ..., 0.31]    (768 numbers)
+Token 3 "is":       [-0.06, 0.21, 0.42, ..., 0.09]    (768 numbers)
+Token 4 "t":        [0.26, -0.35, 0.11, ..., -0.45]   (768 numbers)
+Token 5 "Johannes": [0.09, -0.27, 0.89, ..., 0.14]    (768 numbers)
 ```
 
-Or in matrix form: `Q = Embedding × W_Q + Bias_Q`
+**Step 2: The QKV weight matrix**
 
-**Understanding the dimensions:**
-
-| Component | Dimensions | Explanation |
-|-----------|------------|-------------|
-| Input Embedding | 768 | The token's representation |
-| W_Q, W_K, W_V | 768 × 64 | Learned weight matrices (per head) |
-| Bias_Q, Bias_K, Bias_V | 64 | Learned bias vectors (per head) |
-| Output Q, K, V | 64 | Compressed representation for this head |
-
-**Why 768 → 64?** Each head gets a smaller slice (64 dimensions) to work with. Since there are 12 heads, the total is still `12 × 64 = 768`.
-
-**Example for token `Me`:**
+The model has a single learned weight matrix that produces Q, K, and V all at once:
 
 ```
-Embedding of "Me": [0.13, -0.43, 0.78, ..., -0.22]  (768 numbers)
-                              ↓
-                    × W_Q (768 × 64) + Bias_Q (64)
-                              ↓
-Query vector:       [0.2, 0.1, -0.3, ..., 0.15]     (64 numbers)
+W_qkv shape: (768, 2304)
+
+Why 2304? Because 2304 = 768 × 3 (for Q, K, V each of size 768)
 ```
 
-The same embedding is multiplied by different weight matrices to get K and V:
+**Step 3: Matrix multiplication**
 
-| Token | Embedding (768) | → | Q (64) | K (64) | V (64) |
-|-------|-----------------|---|--------|--------|--------|
-| `Me` | [0.13, -0.43, ...] | → | [0.2, 0.1, ...] | [0.3, -0.2, ...] | [0.1, 0.4, ...] |
-| `in` | [0.11, -0.42, ...] | → | [0.1, 0.3, ...] | [0.2, 0.1, ...] | [0.2, -0.1, ...] |
-| ... | ... | → | ... | ... | ... |
+Each token's embedding (768) is multiplied by W_qkv (768 × 2304):
 
-**What do Q, K, V actually represent?**
+```
+For token "Me":
+[0.13, -0.43, ..., -0.22] × W_qkv = [q1, q2, ..., q768, k1, k2, ..., k768, v1, v2, ..., v768]
+       (768)              (768×2304)                        (2304)
+```
 
-Think of it like a search engine:
-- **Query:** The search term — what this token is looking for
-- **Key:** The index entry — what this token can be found under
-- **Value:** The content — what information this token provides
+**Step 4: Result for all tokens**
 
-When token `Johannes` wants to find relevant context, its Query searches through all Keys. The Key of `Name` might match well, so `Johannes` retrieves information from `Name`'s Value.
+After multiplying all 6 tokens by the weight matrix:
 
-Queries compare with Keys to measure relevance (via dot product), and this relevance score is used to weight how much of each Value to include.
+```
+Output shape: (6, 2304)
+
+Token 0 "Me":       [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
+Token 1 "in":       [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
+Token 2 "Name":     [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
+Token 3 "is":       [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
+Token 4 "t":        [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
+Token 5 "Johannes": [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
+                    |____Q (768)____||____K (768)____||____V (768)____|
+```
+
+**Step 5: Split into Q, K, V**
+
+We split the 2304 dimensions into three parts:
+
+```
+Q shape: (6, 768)  ← dimensions 0-767
+K shape: (6, 768)  ← dimensions 768-1535  
+V shape: (6, 768)  ← dimensions 1536-2303
+```
+
+**Step 6: Reshape for 12 heads**
+
+Each 768-dimensional Q, K, V is split into 12 heads of 64 dimensions each:
+
+```
+Q reshaped: (6, 12, 64)  → 6 tokens, 12 heads, 64 dims per head
+K reshaped: (6, 12, 64)
+V reshaped: (6, 12, 64)
+```
+
+**The complete transformation:**
+
+```
+(6, 768)  →  × W_qkv  →  (6, 2304)  →  split  →  Q(6,768), K(6,768), V(6,768)  →  reshape  →  (6, 12, 64) each
+ input       (768×2304)    QKV combined           separate Q, K, V                            per head
+```
+
+**What are Q, K, V used for?**
+
+- **Query (Q):** "What am I looking for?" — used to search
+- **Key (K):** "What do I contain?" — used to be searched
+- **Value (V):** "What information do I provide?" — the actual content to retrieve
+
+In the next step (7.3 Masked Self Attention), each token's Query will be compared against all Keys to compute attention scores, which determine how much of each Value to use.
 
 #### 7.2 Why Multiple Heads?
 
