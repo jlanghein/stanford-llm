@@ -55,10 +55,6 @@ flowchart LR
 
 ## II. Turning Text into Numbers (Input Representation)
 
-**Goal:** Convert language into something math can operate on.
-
-**Core idea:** Text → Tokens → Vectors → + Position Information
-
 **At this point, we now have:**
 - Sequence length = 6 tokens
 - Embedding size = 768
@@ -69,7 +65,18 @@ Before a Transformer can process text, it must convert it into numbers. This hap
 
 **Step 1: Tokenization** — The text is split into smaller units called **tokens**. These aren't always whole words; common subwords or characters get their own tokens.
 
-**Step 2: Token → Vector** — Each token ID is used to look up a corresponding **embedding vector** (a list of 768 numbers) from a learned embedding table.
+**Step 2: Token → Vector** — Each token ID is used to look up a corresponding **embedding vector** from a learned embedding table.
+
+**What is a vector(768)?**
+
+A vector is just a list of numbers. In GPT-2, each token becomes a list of **768 numbers**. Why 768? It's a design choice—bigger models use more (GPT-3 uses 12,288).
+
+Think of these 768 numbers as 768 different "dimensions" that describe the token's meaning. Each dimension might capture something about the word—though not in ways humans can easily interpret. Together, they place the token in a 768-dimensional space where similar meanings are closer together.
+
+```
+"Johannes" → [0.12, -0.45, 0.78, 0.03, ..., -0.22]  (768 numbers total)
+"Name"     → [0.08, -0.41, 0.65, 0.11, ..., -0.19]  (768 numbers total)
+```
 
 **Example:** The sentence `Mein Name ist Johannes` becomes:
 
