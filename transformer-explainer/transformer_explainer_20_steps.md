@@ -238,6 +238,35 @@ The matrix has 3 sections:
 - **Columns 769-1536:** Weights for computing K ("what do I contain?")
 - **Columns 1537-2304:** Weights for computing V ("what information do I carry?")
 
+**What do these questions mean?**
+
+Think of attention like a conversation where each token can ask questions and provide answers:
+
+| Vector | Question it answers | Example for "Johannes" | Used for |
+|--------|---------------------|------------------------|----------|
+| **Q (Query)** | "What information do I need from other tokens?" | "I need context about what kind of name I am, what comes before me" | Searching other tokens |
+| **K (Key)** | "What kind of information do I have that others might want?" | "I am a proper noun, a person's name, German" | Being found by other tokens |
+| **V (Value)** | "What actual information should I pass along if selected?" | "The meaning/representation of 'Johannes' itself" | The content that gets retrieved |
+
+**A concrete example with our sentence:**
+
+When the model processes "Johannes", it needs to understand that this is the answer to "Name ist ___". Here's how Q, K, V help:
+
+| Token | Q (looking for...) | K (I am a...) | V (I carry...) |
+|-------|-------------------|---------------|----------------|
+| `Name` | "something that completes me" | "noun, label, expects a name" | meaning of "Name" |
+| `ist` | "what connects subject to object" | "verb, copula" | meaning of "ist" |
+| `Johannes` | "context about what I refer to" | "proper noun, person's name" | meaning of "Johannes" |
+
+**How they work together:**
+
+1. "Johannes" broadcasts its **Key**: "I am a proper noun, a person's name"
+2. "Name" broadcasts its **Query**: "I'm looking for something that completes me"
+3. The Query of "Name" matches well with the Key of "Johannes" (high attention score)
+4. So "Name" retrieves information from "Johannes"'s **Value**
+
+This is how the model learns that "Name" and "Johannes" are related in this sentence.
+
 ---
 
 **Step 3: The multiplication (how one output value is computed)**
