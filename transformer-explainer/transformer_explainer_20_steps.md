@@ -94,6 +94,20 @@ Embedding Table (learned during training):
 
 That's it — a simple table lookup. The magic is that these 768 numbers per token were **learned during training** to capture useful meaning.
 
+**What might these 768 dimensions represent?**
+
+Each dimension can encode some aspect of a token's meaning. While the model learns these automatically and they're not always human-interpretable, you can imagine dimensions capturing things like:
+
+| Dimension | Possible meaning | "King" | "Queen" | "Apple" |
+|-----------|------------------|--------|---------|---------|
+| dim 1 | Royalty | 0.9 | 0.85 | -0.1 |
+| dim 2 | Gender (masc→fem) | -0.7 | 0.8 | 0.0 |
+| dim 3 | Edible | -0.2 | -0.2 | 0.95 |
+| dim 4 | Abstract concept | 0.3 | 0.3 | -0.8 |
+| ... | ... | ... | ... | ... |
+
+This is why vector math works on embeddings: `King - Man + Woman ≈ Queen` — the dimensions encoding gender shift while royalty stays intact.
+
 ------------------------------------------------------------------------
 
 ### 5. Positional Encoding
