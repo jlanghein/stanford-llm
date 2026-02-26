@@ -216,14 +216,40 @@ This matrix is **learned during training**. Just like the embedding table, GPT-2
 
 `W_qkv` is a matrix of **1,769,472 numbers** (768 × 2304) that the model learned. Each number is a **weight** that controls how much one input dimension influences one output dimension.
 
-**Example:** Let's say:
-- Input dimension 42 represents something about "noun-ness"
-- Output dimension 5 (in Q) represents "looking for a verb"
+**Concrete example with "Name" token:**
 
-The weight at position `W[42, 5]` controls how much the "noun-ness" signal contributes to the "looking for a verb" query. 
-- If `W[42, 5] = 0.8` (high positive): nouns strongly want to find verbs
-- If `W[42, 5] = -0.5` (negative): nouns avoid looking for verbs
-- If `W[42, 5] = 0.0` (zero): noun-ness doesn't affect this query dimension
+Remember from Section 4, the embedding for "Name" might encode things like:
+- Dimension 42: "noun-ness" = 0.85 (high, because "Name" is a noun)
+- Dimension 100: "verb-ness" = -0.2 (low, it's not a verb)
+- Dimension 203: "refers to a person" = 0.6
+
+Now, the Query vector needs to encode "what is this token looking for?" 
+
+Let's say Q dimension 5 represents "looking for a name/identity". The weights determine how this is computed:
+
+```
+For token "Name" (Token ID 6530):
+
+Embedding of "Name": [... , 0.85, ... , -0.2, ... , 0.6, ...]
+                          dim 42    dim 100    dim 203
+
+To compute Q[5] ("looking for a name"):
+
+Q[5] = Embedding[0] × W[0,5] + Embedding[1] × W[1,5] + ... + Embedding[767] × W[767,5]
+
+     = ... + 0.85 × 0.7  + ... + (-0.2) × 0.1 + ... + 0.6 × 0.8 + ...
+             ────────────         ──────────         ──────────
+             noun-ness            verb-ness          person-ref
+             contributes          contributes        contributes
+             strongly             a little           strongly
+
+     = 0.92 (example result: "Name" strongly looks for identity-related tokens)
+```
+
+The model learned these weights so that:
+- Nouns like "Name" produce Queries that search for related content
+- The same "Name" token produces a Key that says "I contain a noun/label"
+- And a Value that carries the actual meaning to pass along
 
 ```
 W_qkv shape: (768, 2304)
@@ -231,14 +257,16 @@ W_qkv shape: (768, 2304)
          Output dimensions (2304)
          ┌─────────────────────────────────────────────────────┐
          │  Q part (768)  │  K part (768)  │  V part (768)    │
+         │ "what I seek"  │ "what I am"    │ "what I offer"   │
          │ col 0...767    │ col 768...1535 │ col 1536...2303  │
     ┌────┼────────────────┼────────────────┼──────────────────┤
     │ 0  │  0.02  -0.01   │  0.03   0.05   │  -0.02   0.01    │
 I   │ 1  │ -0.03   0.04   │  0.01  -0.02   │   0.04   0.03    │
-n   │ 2  │  0.01   0.02   │ -0.04   0.01   │   0.02  -0.01    │
-p   │... │  ...    ...    │  ...    ...    │   ...    ...     │
-u   │767 │  0.02  -0.03   │  0.02   0.01   │  -0.01   0.02    │
-t   └────┴────────────────┴────────────────┴──────────────────┘
+n   │...│   ...   ...    │  ...    ...    │   ...    ...     │
+p   │ 42│  0.70   0.30   │  0.80   0.10   │   0.50   0.40    │ ← "noun-ness" row
+u   │...│   ...   ...    │  ...    ...    │   ...    ...     │
+t   │767│  0.02  -0.03   │  0.02   0.01   │  -0.01   0.02    │
+    └────┴────────────────┴────────────────┴──────────────────┘
 (768)
 ```
 
@@ -252,17 +280,19 @@ t   └────┴────────────────┴──�
 Each of Q, K, V needs 768 dimensions, so we produce all three at once.
 ```
 
-**What does the multiplication actually do?**
-
-Each output value is a weighted sum of ALL input values. For example, to compute the first Q value:
+**Full example for "Johannes" token:**
 
 ```
-Q[0] = Input[0] × W[0,0] + Input[1] × W[1,0] + Input[2] × W[2,0] + ... + Input[767] × W[767,0]
-     = 0.13 × 0.02 + (-0.43) × (-0.03) + 0.78 × 0.01 + ... + (-0.22) × 0.02
-     = 0.23  (example result)
+Embedding of "Johannes": [0.09, -0.27, 0.89, ..., 0.14]  (768 numbers)
+
+After × W_qkv:
+
+Q for "Johannes": [0.23, 0.45, -0.12, ..., 0.67]  → "I'm looking for: context about names"
+K for "Johannes": [0.34, -0.18, 0.56, ..., 0.29] → "I am: a proper name, person reference"
+V for "Johannes": [0.78, 0.12, -0.34, ..., 0.91] → "I carry: the identity 'Johannes'"
 ```
 
-This means every Q, K, V dimension can "see" information from all 768 input dimensions.
+This is why later, when computing attention, "Johannes" (via its Q) will find "Name" (via its K) relevant — the model learned weights that make name-related tokens find each other.
 
 **Step 3: Matrix multiplication**
 
