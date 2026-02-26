@@ -206,13 +206,54 @@ Token 5 "Johannes": [0.09, -0.27, 0.89, ..., 0.14]    (768 numbers)
 
 **Step 2: The QKV weight matrix**
 
-The model has a single learned weight matrix that produces Q, K, and V all at once:
+The model has a learned weight matrix `W_qkv` that transforms embeddings into Q, K, and V.
+
+**Where does it come from?**
+
+This matrix is **learned during training**. Just like the embedding table, GPT-2 started with random numbers and adjusted them over billions of training examples until they produced useful Q, K, V vectors.
+
+**What does it contain?**
+
+`W_qkv` is a matrix of **1,769,472 numbers** (768 × 2304) that the model learned. Each number determines how much a particular input dimension contributes to a particular output dimension.
 
 ```
 W_qkv shape: (768, 2304)
 
-Why 2304? Because 2304 = 768 × 3 (for Q, K, V each of size 768)
+         Output dimensions (2304)
+         ┌─────────────────────────────────────────────────────┐
+         │  Q part (768)  │  K part (768)  │  V part (768)    │
+         │ col 0...767    │ col 768...1535 │ col 1536...2303  │
+    ┌────┼────────────────┼────────────────┼──────────────────┤
+    │ 0  │  0.02  -0.01   │  0.03   0.05   │  -0.02   0.01    │
+I   │ 1  │ -0.03   0.04   │  0.01  -0.02   │   0.04   0.03    │
+n   │ 2  │  0.01   0.02   │ -0.04   0.01   │   0.02  -0.01    │
+p   │... │  ...    ...    │  ...    ...    │   ...    ...     │
+u   │767 │  0.02  -0.03   │  0.02   0.01   │  -0.01   0.02    │
+t   └────┴────────────────┴────────────────┴──────────────────┘
+(768)
 ```
+
+**Why 2304 columns?**
+
+```
+2304 = 768 + 768 + 768
+       ───   ───   ───
+        Q     K     V
+
+Each of Q, K, V needs 768 dimensions, so we produce all three at once.
+```
+
+**What does the multiplication actually do?**
+
+Each output value is a weighted sum of ALL input values. For example, to compute the first Q value:
+
+```
+Q[0] = Input[0] × W[0,0] + Input[1] × W[1,0] + Input[2] × W[2,0] + ... + Input[767] × W[767,0]
+     = 0.13 × 0.02 + (-0.43) × (-0.03) + 0.78 × 0.01 + ... + (-0.22) × 0.02
+     = 0.23  (example result)
+```
+
+This means every Q, K, V dimension can "see" information from all 768 input dimensions.
 
 **Step 3: Matrix multiplication**
 
