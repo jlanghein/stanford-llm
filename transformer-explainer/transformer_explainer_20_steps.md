@@ -5,7 +5,6 @@
 - [I. The Big Picture](#i-the-big-picture-what-is-happening) (Sections 1-3)
 - [II. Turning Text into Numbers](#ii-turning-text-into-numbers-input-representation) (Sections 4-5)
 - [III. The Core Engine](#iii-the-core-engine-transformer-blocks) (Sections 6-8)
-  - 7. Multi-Head Self Attention (with subsections 7.1-7.4)
 - [IV. Stability & Regularization](#iv-stability--regularization-why-it-trains-properly) (Sections 9-10)
 - [V. Producing the Next-Token Scores](#v-producing-the-next-token-scores-output-layer) (Sections 11-12)
 - [VI. Sampling Strategy](#vi-sampling-strategy-decision-layer) (Sections 13-16)
