@@ -112,16 +112,28 @@ This is why vector math works on embeddings: `King - Man + Woman ≈ Queen` — 
 
 ### 5. Positional Encoding
 
-Word order matters in language. Positional encoding gives each token
-information about its place in the sequence.
+Word order matters in language. Consider:
+- "Johannes ist Name" — doesn't make sense
+- "Name ist Johannes" — grammatically correct
 
-GPT-2 does this by adding a learned positional embedding to the token's
-embedding, but newer models may use other methods, like RoPE, which
-encodes position by rotating certain vectors. All aim to help the model
-understand order in text.
+Without position information, the model would see the same set of tokens and wouldn't know which comes first. **Positional encoding** solves this by giving each token information about its place in the sequence.
 
-**Example (from visualization):** Positions: 0, 1, 2, 3, 4, 5 added to
-token embeddings.
+**How it works:** GPT-2 has a second lookup table — a **positional embedding table** of size `1024 × 768` (max 1024 positions). Each position gets its own 768-number vector, which is **added** to the token embedding.
+
+**Example:** For `Mein Name ist Johannes`:
+
+| Position | Token | Token Embedding | + | Position Embedding | = | Final Embedding |
+|----------|-------|-----------------|---|-------------------|---|-----------------|
+| 0 | `Me` | [0.12, -0.45, ...] | + | [0.01, 0.02, ...] | = | [0.13, -0.43, ...] |
+| 1 | `in` | [0.08, -0.41, ...] | + | [0.03, -0.01, ...] | = | [0.11, -0.42, ...] |
+| 2 | `Name` | [0.15, 0.23, ...] | + | [0.02, 0.05, ...] | = | [0.17, 0.28, ...] |
+| 3 | `is` | [-0.05, 0.18, ...] | + | [-0.01, 0.03, ...] | = | [-0.06, 0.21, ...] |
+| 4 | `t` | [0.22, -0.33, ...] | + | [0.04, -0.02, ...] | = | [0.26, -0.35, ...] |
+| 5 | `Johannes` | [0.07, -0.28, ...] | + | [0.02, 0.01, ...] | = | [0.09, -0.27, ...] |
+
+Now each token's embedding contains both **what** the token is and **where** it appears.
+
+Newer models may use other methods like **RoPE** (Rotary Position Embedding), which encodes position by rotating vectors rather than adding to them.
 
 ------------------------------------------------------------------------
 
