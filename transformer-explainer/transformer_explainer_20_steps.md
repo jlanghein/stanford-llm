@@ -447,14 +447,14 @@ Each token's Query asks: "Who has information I need?" We compare it against eve
 
 For **"Johannes"** (row 6), we compute how much it should attend to each previous token:
 
-| Johannes Q · | Token Key | Calculation (64 values each) | Raw Score |
-|--------------|-----------|------------------------------|-----------|
-| Johannes Q · | Me K | (1.18 × 0.34) + (0.95 × 0.56) + ... | 12.4 |
-| Johannes Q · | in K | (1.18 × 0.18) + (0.95 × -0.29) + ... | 8.2 |
-| Johannes Q · | Name K | (1.18 × 1.45) + (0.95 × 0.72) + ... | **45.8** |
-| Johannes Q · | is K | (1.18 × 0.28) + (0.95 × 0.19) + ... | 15.1 |
-| Johannes Q · | t K | (1.18 × 0.15) + (0.95 × -0.22) + ... | 9.3 |
-| Johannes Q · | Johannes K | (1.18 × 1.52) + (0.95 × 0.81) + ... | 38.2 |
+| Query | × | Key | Calculation (64 values each) | Raw Score |
+|-------|---|-----|------------------------------|-----------|
+| Johannes Q | × | Me K | (1.18 × 0.34) + (0.95 × 0.56) + ... | 12.4 |
+| Johannes Q | × | in K | (1.18 × 0.18) + (0.95 × -0.29) + ... | 8.2 |
+| Johannes Q | × | Name K | (1.18 × 1.45) + (0.95 × 0.72) + ... | **45.8** |
+| Johannes Q | × | is K | (1.18 × 0.28) + (0.95 × 0.19) + ... | 15.1 |
+| Johannes Q | × | t K | (1.18 × 0.15) + (0.95 × -0.22) + ... | 9.3 |
+| Johannes Q | × | Johannes K | (1.18 × 1.52) + (0.95 × 0.81) + ... | 38.2 |
 
 **Key insight:** "Johannes" has the highest raw score with "Name" (45.8) because their Q and K vectors are similar — both are nouns referring to people, so the learned weights produced similar patterns.
 
