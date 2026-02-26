@@ -78,6 +78,29 @@ Think of these 768 numbers as 768 different "dimensions" that describe the token
 "Name"     → [0.08, -0.41, 0.65, 0.11, ..., -0.19]  (768 numbers total)
 ```
 
+**How does Token ID connect to the embedding vector?**
+
+The Token ID is simply an **index into a lookup table**. GPT-2 has a vocabulary of 50,257 tokens. During training, it learns an **embedding table** — a matrix of size `50,257 × 768`. Each row is a unique vector for one token.
+
+```
+Embedding Table (learned during training):
+┌─────────────────────────────────────────────┐
+│ Token ID 0:     [0.02, -0.15, ..., 0.33]    │  ← 768 numbers
+│ Token ID 1:     [0.11,  0.08, ..., -0.21]   │  ← 768 numbers
+│ Token ID 2:     [...]                       │
+│ ...                                         │
+│ Token ID 5308:  [0.12, -0.45, ..., -0.22]   │  ← "Me" looks up this row
+│ ...                                         │
+│ Token ID 50256: [...]                       │
+└─────────────────────────────────────────────┘
+```
+
+When the tokenizer outputs `5308` for "Me":
+1. Go to row 5308 in the embedding table
+2. Return that row's 768 numbers
+
+That's it — a simple table lookup. The magic is that these 768 numbers per token were **learned during training** to capture useful meaning.
+
 **Example:** The sentence `Mein Name ist Johannes` becomes:
 
 | Token | Token ID | Embedding |
