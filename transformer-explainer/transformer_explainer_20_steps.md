@@ -133,6 +133,20 @@ Without position information, the model would see the same set of tokens and wou
 
 Now each token's embedding contains both **what** the token is and **where** it appears.
 
+**What might positional dimensions represent?**
+
+Like token embeddings, positional embeddings are learned during training. Each dimension might encode patterns about position:
+
+| Dimension | Possible meaning | Pos 0 | Pos 1 | Pos 5 | Pos 100 |
+|-----------|------------------|-------|-------|-------|---------|
+| dim 1 | Start of sequence | 0.95 | 0.6 | 0.1 | -0.3 |
+| dim 2 | Even/odd position | 0.8 | -0.8 | -0.8 | 0.8 |
+| dim 3 | Early vs late | 0.9 | 0.85 | 0.5 | -0.7 |
+| dim 4 | Sentence boundary | 0.7 | 0.1 | 0.0 | 0.0 |
+| ... | ... | ... | ... | ... | ... |
+
+The model learns which positional patterns matter for language — like "the first word is often a subject" or "words near each other are likely related."
+
 Newer models may use other methods like **RoPE** (Rotary Position Embedding), which encodes position by rotating vectors rather than adding to them.
 
 ------------------------------------------------------------------------
