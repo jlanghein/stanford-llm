@@ -29,9 +29,6 @@ massive datasets and for inference to generate outputs. Here we use
 GPT-2 (small), simpler than newer ones but perfect for learning the
 fundamentals.
 
-**Example (from visualization):** GPT-2 (small), 12 Transformer blocks,
-embedding size 768, vocabulary size 50,257.
-
 ------------------------------------------------------------------------
 
 ### 2. How Transformers Work?
