@@ -55,13 +55,6 @@ flowchart LR
 
 ## II. Turning Text into Numbers (Input Representation)
 
-> **🔍 Tracing "Name" through the pipeline:** To show how values flow from one step to the next, we'll trace the token "Name" using emoji markers:
-> - 🔵 Token ID (6530) → used for embedding lookup
-> - 🟢 Embedding values (0.15, 0.23, 0.85) → fed into positional encoding
-> - 🟡 Final embedding after position added (0.17, 0.28) → input to attention
-> - 🟠 Q/K values (1.23, 1.45) → used to compute attention scores
-> - 🔴 Attention score (0.47) → determines how much "Johannes" attends to "Name"
-
 ### 4. Embedding
 
 Before a Transformer can process text, it must convert it into numbers. This happens in two steps:
@@ -76,7 +69,7 @@ Before a Transformer can process text, it must convert it into numbers. This hap
 |-------|----------|-------------------------|
 | `Me` | 5308 | [0.12, -0.45, 0.78, ..., -0.22] |
 | `in` | 259 | [0.08, -0.41, 0.65, ..., -0.19] |
-| `Name` | 🔵 6530 | [🟢 0.15, 🟢 0.23, -0.54, ..., 0.31] |
+| `Name` | 6530 | [0.15, 0.23, -0.54, ..., 0.31] |
 | `is` | 318 | [-0.05, 0.18, 0.42, ..., 0.09] |
 | `t` | 83 | [0.22, -0.33, 0.11, ..., -0.45] |
 | `Johannes` | 38579 | [0.07, -0.28, 0.89, ..., 0.14] |
@@ -95,8 +88,6 @@ Embedding Table (learned during training):
 │ ...                                         │
 │ Row 5308:  [0.12, -0.45, ..., -0.22]        │  ← "Me" looks up this row
 │ ...                                         │
-│ Row 6530:  [0.15,  0.23, ...,  0.31]        │  ← 🔵 "Name" looks up this row → 🟢
-│ ...                                         │
 │ Row 50256: [...]                            │
 └─────────────────────────────────────────────┘
 ```
@@ -113,7 +104,7 @@ Each dimension can encode some aspect of a token's meaning. While the model lear
 | dim 2 | Gender (masc→fem) | -0.7 | 0.8 | 0.0 | 0.0 | -0.5 |
 | dim 3 | Edible | -0.2 | -0.2 | 0.95 | -0.3 | -0.3 |
 | dim 4 | Abstract concept | 0.3 | 0.3 | -0.8 | 0.4 | -0.2 |
-| dim 42 | Noun-ness | 0.8 | 0.8 | 0.9 | 🟢 0.85 | 0.7 |
+| dim 42 | Noun-ness | 0.8 | 0.8 | 0.9 | 0.85 | 0.7 |
 | dim 100 | Verb-ness | -0.3 | -0.3 | -0.4 | -0.2 | -0.3 |
 | dim 203 | Refers to person | 0.7 | 0.7 | -0.5 | 0.6 | 0.95 |
 | ... | ... | ... | ... | ... | ... | ... |
@@ -140,7 +131,7 @@ Without position information, the model would see the same set of tokens and wou
 |----------|-------|----------|-----------------|---|-------------------|---|-----------------|
 | 0 | `Me` | 5308 | [0.12, -0.45, ...] | + | [0.01, 0.02, ...] | = | [0.13, -0.43, ...] |
 | 1 | `in` | 259 | [0.08, -0.41, ...] | + | [0.03, -0.01, ...] | = | [0.11, -0.42, ...] |
-| 2 | `Name` | 🔵 6530 | [🟢 0.15, 🟢 0.23, ...] | + | [0.02, 0.05, ...] | = | [🟡 0.17, 🟡 0.28, ...] |
+| 2 | `Name` | 6530 | [0.15, 0.23, ...] | + | [0.02, 0.05, ...] | = | [0.17, 0.28, ...] |
 | 3 | `is` | 318 | [-0.05, 0.18, ...] | + | [-0.01, 0.03, ...] | = | [-0.06, 0.21, ...] |
 | 4 | `t` | 83 | [0.22, -0.33, ...] | + | [0.04, -0.02, ...] | = | [0.26, -0.35, ...] |
 | 5 | `Johannes` | 38579 | [0.07, -0.28, ...] | + | [0.02, 0.01, ...] | = | [0.09, -0.27, ...] |
@@ -211,7 +202,7 @@ After embedding + positional encoding, we have 6 tokens, each with 768 dimension
 |-------|-------|-------|-------|-------|---------------|----------------|------------------|-----|---------|
 | `Me` | 0.13 | -0.43 | 0.78 | 0.12 | 0.70 | -0.1 | 0.3 | ... | -0.22 |
 | `in` | 0.11 | -0.42 | 0.65 | 0.08 | 0.20 | -0.1 | 0.1 | ... | -0.19 |
-| `Name` | 🟡 0.17 | 🟡 0.28 | -0.54 | 0.15 | 🟢 **0.85** | -0.2 | **0.6** | ... | 0.31 |
+| `Name` | 0.17 | 0.28 | -0.54 | 0.15 | **0.85** | -0.2 | **0.6** | ... | 0.31 |
 | `is` | -0.06 | 0.21 | 0.42 | -0.05 | 0.10 | **0.8** | 0.1 | ... | 0.09 |
 | `t` | 0.26 | -0.35 | 0.11 | 0.22 | 0.15 | 0.3 | 0.0 | ... | -0.45 |
 | `Johannes` | 0.09 | -0.27 | 0.89 | 0.07 | **0.70** | -0.3 | **0.95** | ... | 0.14 |
@@ -284,20 +275,20 @@ To get **Q column 1** for token "Name", we multiply each dimension by its weight
 
 | Dimension | "Name" embedding | × | Weight (Q col 1) | = | Contribution |
 |-----------|------------------|---|------------------|---|--------------|
-| dim 1 | 🟡 0.17 | × | 0.02 | = | 0.0034 |
-| dim 2 | 🟡 0.28 | × | -0.03 | = | -0.0084 |
+| dim 1 | 0.17 | × | 0.02 | = | 0.0034 |
+| dim 2 | 0.28 | × | -0.03 | = | -0.0084 |
 | dim 3 | -0.54 | × | 0.01 | = | -0.0054 |
 | ... | ... | × | ... | = | ... |
-| **dim 42** (noun) | 🟢 **0.85** | × | **0.70** | = | **0.595** |
+| **dim 42** (noun) | **0.85** | × | **0.70** | = | **0.595** |
 | ... | ... | × | ... | = | ... |
 | **dim 203** (person) | **0.60** | × | **0.60** | = | **0.36** |
 | ... | ... | × | ... | = | ... |
 | dim 768 | 0.31 | × | 0.02 | = | 0.0062 |
-| | | | **SUM** | = | 🟠 **Q[1] = 1.23** |
+| | | | **SUM** | = | **Q[1] = 1.23** |
 
-This single value (🟠 1.23) is just the first of 768 Q values for "Name". We repeat this for all 768 Q columns, then all 768 K columns, then all 768 V columns.
+This single value (1.23) is just the first of 768 Q values for "Name". We repeat this for all 768 Q columns, then all 768 K columns, then all 768 V columns.
 
-**Key insight:** Because "Name" has high noun-ness (🟢 0.85) and high person-reference (0.60), and the weights for Q col 1 are high for these dimensions (0.70 and 0.60), "Name" gets a high Q[1] value. The model learned these weights to make nouns/names produce certain query patterns.
+**Key insight:** Because "Name" has high noun-ness (0.85) and high person-reference (0.60), and the weights for Q col 1 are high for these dimensions (0.70 and 0.60), "Name" gets a high Q[1] value. The model learned these weights to make nouns/names produce certain query patterns.
 
 ---
 
@@ -309,7 +300,7 @@ After multiplying all 6 tokens by the weight matrix, we get the **QKV matrix (6 
 |-------|---------|---------|-----|-----------|---------|---------|-----|-----------|---------|---------|-----|-----------|
 | `Me` | 0.45 | -0.23 | ... | 0.12 | 0.34 | 0.56 | ... | -0.18 | 0.67 | 0.23 | ... | 0.45 |
 | `in` | 0.23 | 0.12 | ... | -0.34 | 0.18 | -0.29 | ... | 0.42 | 0.31 | -0.15 | ... | 0.28 |
-| `Name` | 🟠 **1.23** | 0.89 | ... | 0.67 | 🟠 **1.45** | 0.72 | ... | 0.38 | 0.92 | 0.48 | ... | 0.71 |
+| `Name` | **1.23** | 0.89 | ... | 0.67 | **1.45** | 0.72 | ... | 0.38 | 0.92 | 0.48 | ... | 0.71 |
 | `is` | 0.34 | -0.45 | ... | 0.23 | 0.28 | 0.19 | ... | -0.31 | 0.43 | 0.22 | ... | 0.19 |
 | `t` | 0.19 | 0.08 | ... | -0.12 | 0.15 | -0.22 | ... | 0.27 | 0.25 | -0.18 | ... | 0.33 |
 | `Johannes` | **1.18** | 0.95 | ... | 0.72 | **1.52** | 0.81 | ... | 0.45 | 0.98 | 0.53 | ... | 0.78 |
@@ -508,7 +499,7 @@ For each row, we set future positions to -∞:
 | **Name** | 1.2 | 1.5 | 4.2 | -∞ | -∞ | -∞ |
 | **is** | 1.1 | 0.9 | 2.8 | 3.1 | -∞ | -∞ |
 | **t** | 0.8 | 1.0 | 1.9 | 3.5 | 1.7 | -∞ |
-| **Johannes** | 1.55 | 1.03 | 🟠 **5.73** | 1.89 | 1.16 | 4.78 |
+| **Johannes** | 1.55 | 1.03 | **5.73** | 1.89 | 1.16 | 4.78 |
 
 ---
 
@@ -524,7 +515,7 @@ Softmax converts each row into probabilities that sum to 1. The -∞ values beco
 |-------|--------------|---------|-------------|
 | Me | 1.55 | 4.71 | 4.71 / 659.5 = 0.007 |
 | in | 1.03 | 2.80 | 2.80 / 659.5 = 0.004 |
-| Name | 🟠 **5.73** | **307.6** | 307.6 / 659.5 = 🔴 **0.466** |
+| Name | **5.73** | **307.6** | 307.6 / 659.5 = **0.466** |
 | is | 1.89 | 6.62 | 6.62 / 659.5 = 0.010 |
 | t | 1.16 | 3.19 | 3.19 / 659.5 = 0.005 |
 | Johannes | 4.78 | 119.1 | 119.1 / 659.5 = 0.181 |
@@ -543,11 +534,11 @@ After applying softmax to all rows:
 | **Name** | 0.08 | 0.12 | 0.80 | 0 | 0 | 0 | 1.0 |
 | **is** | 0.06 | 0.05 | 0.35 | 0.54 | 0 | 0 | 1.0 |
 | **t** | 0.05 | 0.06 | 0.15 | 0.58 | 0.16 | 0 | 1.0 |
-| **Johannes** | 0.01 | 0.01 | 🔴 **0.47** | 0.01 | 0.01 | 0.18 | 1.0 |
+| **Johannes** | 0.01 | 0.01 | **0.47** | 0.01 | 0.01 | 0.18 | 1.0 |
 
 **Reading this matrix:**
 - Each row shows how one token distributes its attention
-- "Johannes" pays 🔴 47% attention to "Name" — the strongest connection!
+- "Johannes" pays 47% attention to "Name" — the strongest connection!
 - "Me" can only see itself, so it's 100% self-attention
 - The 0s are masked positions (future tokens)
 
@@ -570,19 +561,19 @@ For each token, we compute: **output = sum(attention_weight × Value)** for all 
 
 **For "Johannes" in Head 1:**
 
-Remember "Johannes" attention weights: Me=0.01, in=0.01, Name=🔴 0.47, is=0.01, t=0.01, Johannes=0.18
+Remember "Johannes" attention weights: Me=0.01, in=0.01, Name=0.47, is=0.01, t=0.01, Johannes=0.18
 
 | Attended Token | Attention Weight | × | Value (64 dims) | = | Weighted Contribution |
 |----------------|------------------|---|-----------------|---|----------------------|
 | Me | 0.01 | × | [0.67, 0.23, ..., 0.31] | = | [0.007, 0.002, ..., 0.003] |
 | in | 0.01 | × | [0.31, -0.15, ..., 0.22] | = | [0.003, -0.002, ..., 0.002] |
-| **Name** | 🔴 **0.47** | × | [0.92, 0.48, ..., 0.55] | = | **[0.432, 0.226, ..., 0.259]** |
+| **Name** | **0.47** | × | [0.92, 0.48, ..., 0.55] | = | **[0.432, 0.226, ..., 0.259]** |
 | is | 0.01 | × | [0.43, 0.22, ..., 0.18] | = | [0.004, 0.002, ..., 0.002] |
 | t | 0.01 | × | [0.25, -0.18, ..., 0.27] | = | [0.003, -0.002, ..., 0.003] |
 | Johannes | 0.18 | × | [0.98, 0.53, ..., 0.61] | = | [0.176, 0.095, ..., 0.110] |
 | | | | **SUM** | = | **[0.625, 0.321, ..., 0.379]** |
 
-**Key insight:** "Johannes"'s output is dominated by "Name"'s Value (🔴 47% weight) — the model is mixing "Name"'s meaning into "Johannes"'s representation. This is how context flows between related words!
+**Key insight:** "Johannes"'s output is dominated by "Name"'s Value (47% weight) — the model is mixing "Name"'s meaning into "Johannes"'s representation. This is how context flows between related words!
 
 ---
 
