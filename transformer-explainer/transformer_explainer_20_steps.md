@@ -2,16 +2,16 @@
 
 ## Table of Contents
 
-- [I. The Big Picture (What is happening?)](#section-i)
-- [II. Turning Text into Numbers (Input Representation)](#section-ii)
-- [III. The Core Engine (Transformer Blocks)](#section-iii)
-- [IV. Stability & Regularization (Why it trains properly)](#section-iv)
-- [V. Producing the Next-Token Scores (Output Layer)](#section-v)
-- [VI. Sampling Strategy (Decision Layer)](#section-vi)
+- [I. The Big Picture (What is happening?)](#i-the-big-picture-what-is-happening)
+- [II. Turning Text into Numbers (Input Representation)](#ii-turning-text-into-numbers-input-representation)
+- [III. The Core Engine (Transformer Blocks)](#iii-the-core-engine-transformer-blocks)
+- [IV. Stability & Regularization (Why it trains properly)](#iv-stability--regularization-why-it-trains-properly)
+- [V. Producing the Next-Token Scores (Output Layer)](#v-producing-the-next-token-scores-output-layer)
+- [VI. Sampling Strategy (Decision Layer)](#vi-sampling-strategy-decision-layer)
 
 ---
 
-## I. The Big Picture (What is happening?) {#section-i}
+## I. The Big Picture (What is happening?)
 
 **Goal:** Understand what the model is trying to do.
 
@@ -63,7 +63,7 @@ logits → softmax → 37.70% probability for `burg`.
 
 ------------------------------------------------------------------------
 
-## II. Turning Text into Numbers (Input Representation) {#section-ii}
+## II. Turning Text into Numbers (Input Representation)
 
 **Goal:** Convert language into something math can operate on.
 
@@ -104,7 +104,7 @@ token embeddings.
 
 ------------------------------------------------------------------------
 
-## III. The Core Engine (Transformer Blocks) {#section-iii}
+## III. The Core Engine (Transformer Blocks)
 
 **Goal:** Contextualize token representations.
 
@@ -224,7 +224,7 @@ Linear(3072 → 768).
 
 ------------------------------------------------------------------------
 
-## IV. Stability & Regularization (Why it trains properly) {#section-iv}
+## IV. Stability & Regularization (Why it trains properly)
 
 **Goal:** Understand architectural helpers that ensure stable training.
 
@@ -259,7 +259,7 @@ training; disabled during inference.
 
 ------------------------------------------------------------------------
 
-## V. Producing the Next-Token Scores (Output Layer) {#section-v}
+## V. Producing the Next-Token Scores (Output Layer)
 
 **Goal:** Convert final token representation into probability distribution.
 
@@ -300,7 +300,7 @@ generated text.
 
 ------------------------------------------------------------------------
 
-## VI. Sampling Strategy (Decision Layer) {#section-vi}
+## VI. Sampling Strategy (Decision Layer)
 
 **Goal:** Determine how tokens are selected from probability distribution.
 
