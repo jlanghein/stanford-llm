@@ -65,17 +65,32 @@ flowchart LR
 
 ### 4. Embedding
 
-Before a Transformer can use text, it first breaks it into small units
-and represents each as a list of numbers (vector). This process is
-called embedding, and the term can refer to both the process and the
-resulting vector.
+Before a Transformer can process text, it must convert it into numbers. This happens in two steps:
 
-In this tool, each vector appears as a rectangle, and hovering over it
-shows its size.
+**Step 1: Tokenization** — The text is split into smaller units called **tokens**. These aren't always whole words; common subwords or characters get their own tokens.
 
-**Example (from visualization):** Tokens: `Me`, `in`, `Name`, `is`, `t`,
-`Johannes`\
-Each token → vector(768)
+**Step 2: Token → Vector** — Each token ID is used to look up a corresponding **embedding vector** (a list of 768 numbers) from a learned embedding table.
+
+**Example:** The sentence `Mein Name ist Johannes` becomes:
+
+| Token | Token ID | Embedding |
+|-------|----------|-----------|
+| `Me` | 5308 | vector(768) |
+| `in` | 259 | vector(768) |
+| `Name` | 6530 | vector(768) |
+| `is` | 318 | vector(768) |
+| `t` | 83 | vector(768) |
+| `Johannes` | 38579 | vector(768) |
+
+Notice that "Mein" was split into `Me` + `in` and "ist" into `is` + `t`. The tokenizer breaks words into subwords based on what it learned during training.
+
+```mermaid
+flowchart LR
+    A["Mein Name ist Johannes"] --> B[Tokenizer]
+    B --> C["Me, in, Name, is, t, Johannes"]
+    C --> D[Token IDs]
+    D --> E["6 vectors of size 768"]
+```
 
 ------------------------------------------------------------------------
 
