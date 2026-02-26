@@ -261,17 +261,6 @@ This single value (1.23) is just the first of 768 Q values for "Name". We repeat
 
 **Key insight:** Because "Name" has high noun-ness (0.85) and high person-reference (0.60), and the weights for Q col 1 are high for these dimensions (0.70 and 0.60), "Name" gets a high Q[1] value. The model learned these weights to make nouns/names produce certain query patterns.
 
-After × W_qkv:
-
-Q for "Johannes": [0.23, 0.45, -0.12, ..., 0.67]  → "I'm looking for: context about names"
-K for "Johannes": [0.34, -0.18, 0.56, ..., 0.29] → "I am: a proper name, person reference"
-V for "Johannes": [0.78, 0.12, -0.34, ..., 0.91] → "I carry: the identity 'Johannes'"
-```
-
-This is why later, when computing attention, "Johannes" (via its Q) will find "Name" (via its K) relevant — the model learned weights that make name-related tokens find each other.
-
-**Step 3: Matrix multiplication**
-
 ---
 
 **Step 4: Result for all tokens**
