@@ -214,7 +214,16 @@ This matrix is **learned during training**. Just like the embedding table, GPT-2
 
 **What does it contain?**
 
-`W_qkv` is a matrix of **1,769,472 numbers** (768 × 2304) that the model learned. Each number determines how much a particular input dimension contributes to a particular output dimension.
+`W_qkv` is a matrix of **1,769,472 numbers** (768 × 2304) that the model learned. Each number is a **weight** that controls how much one input dimension influences one output dimension.
+
+**Example:** Let's say:
+- Input dimension 42 represents something about "noun-ness"
+- Output dimension 5 (in Q) represents "looking for a verb"
+
+The weight at position `W[42, 5]` controls how much the "noun-ness" signal contributes to the "looking for a verb" query. 
+- If `W[42, 5] = 0.8` (high positive): nouns strongly want to find verbs
+- If `W[42, 5] = -0.5` (negative): nouns avoid looking for verbs
+- If `W[42, 5] = 0.0` (zero): noun-ness doesn't affect this query dimension
 
 ```
 W_qkv shape: (768, 2304)
