@@ -153,121 +153,125 @@ Newer models may use other methods like **RoPE** (Rotary Position Embedding), wh
 
 ## III. The Core Engine (Transformer Blocks)
 
-**Goal:** Contextualize token representations.
-
-**This entire section is one repeated unit:**
-```
-LayerNorm
-→ Self-Attention (Q/K/V, masking, softmax)
-→ Residual
-→ LayerNorm
-→ MLP
-→ Residual
-```
-
-**This is the heart of the model.**
-
 ### 6. Repetitive Transformer Blocks
 
-A Transformer block is the main unit of processing in the model. It has
-two parts:
+A Transformer block is the main unit of processing in the model. It has two parts:
 
-Multi-head self-attention -- lets tokens share information\
-MLP -- refines each token's details
+1. **Multi-head self-attention** — lets tokens share information with each other
+2. **MLP** — refines each token's representation independently
 
-Models stack many blocks so token representations become richer as they
-pass through. GPT-2 (small) has 12 of them.
+Models stack many blocks so token representations become richer as they pass through. GPT-2 (small) has **12 blocks** stacked sequentially.
 
-**Example (from visualization):** The same block is repeated 12 times
-before producing final logits.
+```mermaid
+flowchart LR
+    A[Input Embeddings] --> B[Block 1]
+    B --> C[Block 2]
+    C --> D[...]
+    D --> E[Block 12]
+    E --> F[Output]
+```
+
+**Why stack blocks?** Each block refines the representation. Early blocks might learn basic patterns (grammar, word relationships), while later blocks capture more abstract concepts (sentiment, topic, intent).
 
 ------------------------------------------------------------------------
 
 ### 7. Multi-Head Self Attention
 
-Self-attention lets the model decide which parts of the input are most
-relevant to each token. This helps it capture meaning and relationships,
-even between far-apart words.
+Self-attention lets each token "look at" all other tokens and decide which ones are relevant. This helps capture meaning and relationships, even between far-apart words.
 
-In multi-head form, the model runs several attention processes in
-parallel, each focusing on different patterns in the text.
+**Example:** In `Mein Name ist Johannes`, when processing `Johannes`, the model might attend strongly to `Name` (because "Johannes" is the name being referenced).
 
-**Example (from visualization):** Head 6 of 12 shown; different colored
-attention lines across tokens.
+In **multi-head** form, the model runs several attention processes in parallel (12 heads in GPT-2), each focusing on different patterns — one head might track grammar, another might track meaning, another might track coreference.
 
 ------------------------------------------------------------------------
 
-### 8. Query, Key, Value
+#### 8. Query, Key, Value
 
 To perform self-attention, each token's embedding is transformed into
-three new embeddings---Query, Key, and Value. This transformation is
-done by applying different weights and biases to each token embedding.
-These parameters (weights and biases), are optimized through training.
+three new vectors — **Query**, **Key**, and **Value**:
 
-Once created, Queries compare with Keys to measure relevance, and this
-relevance is used to weight the Values.
+- **Query (Q):** "What am I looking for?"
+- **Key (K):** "What do I contain?"
+- **Value (V):** "What information do I pass along?"
 
-**Example (from visualization):** Each token → Q(64), K(64), V(64) per
-head.
+This transformation is done by multiplying the embedding with learned weight matrices.
 
-------------------------------------------------------------------------
+| Token | Embedding (768) | → | Q (64) | K (64) | V (64) |
+|-------|-----------------|---|--------|--------|--------|
+| `Me` | [0.13, -0.43, ...] | → | [0.2, 0.1, ...] | [0.3, -0.2, ...] | [0.1, 0.4, ...] |
+| `in` | [0.11, -0.42, ...] | → | [0.1, 0.3, ...] | [0.2, 0.1, ...] | [0.2, -0.1, ...] |
+| ... | ... | → | ... | ... | ... |
 
-### 9. Multi-head
-
-After creating Q, K, and V embeddings, the model splits them into
-several heads (12 in GPT-2 small). Each head works with its own smaller
-set of Q/K/V, focusing on different patterns in the text---like grammar,
-meaning, or long-range links.
-
-Multiple heads let the model learn many kinds of relationships in
-parallel, making its understanding richer.
-
-**Example (from visualization):** 12 heads × 64 dimensions = 768 total
-dimensions.
+Queries compare with Keys to measure relevance, and this relevance is used to weight the Values.
 
 ------------------------------------------------------------------------
 
-### 10. Masked Self Attention
+#### 9. Multi-head
 
-In each head, the model decides how much each token focuses on others:
+Each head works with smaller vectors (64 dimensions instead of 768). GPT-2 has **12 heads**, and `12 × 64 = 768`.
 
-Dot Product -- Multiply matching numbers in Query/Key vectors, sum to
-get attention scores.\
-Mask -- Hide future tokens so it can't peek ahead.\
-Softmax -- Convert scores to probabilities, each row summing to 1,
-showing focus on earlier tokens.
+Why multiple heads? Each head can specialize in different patterns:
 
-**Example (from visualization):** Dot products like -10.5 to 134.1 →
-masked → softmax → attention weights.
+| Head | Might learn to track |
+|------|---------------------|
+| Head 1 | Subject-verb relationships |
+| Head 2 | Adjective-noun pairs |
+| Head 3 | Long-range references |
+| Head 4 | Punctuation patterns |
+| ... | ... |
+
+This lets the model capture many types of relationships simultaneously.
 
 ------------------------------------------------------------------------
 
-### 11. Attention Output & Concatenation
+#### 10. Masked Self Attention
 
-Each head multiplies its attention scores with the Value embeddings to
-produce its attention output---a refined representation of each token
-after considering context.
+In each head, attention scores determine how much each token focuses on others:
 
-GPT-2 (small) has 12 such outputs, which are concatenated to form a
-single vector of the original size (768 numbers).
+1. **Dot Product** — Multiply Query with each Key to get raw attention scores
+2. **Mask** — Hide future tokens (set scores to -∞) so the model can't "peek ahead"
+3. **Softmax** — Convert scores to probabilities (each row sums to 1)
 
-**Example (from visualization):** 12 outputs concatenated → vector(768).
+**Example:** For `Mein Name ist Johannes`, the attention matrix might look like:
+
+|  | Me | in | Name | is | t | Johannes |
+|--|----|----|------|----|---|----------|
+| **Me** | 0.8 | 0.2 | - | - | - | - |
+| **in** | 0.3 | 0.7 | - | - | - | - |
+| **Name** | 0.1 | 0.2 | 0.7 | - | - | - |
+| **is** | 0.1 | 0.1 | 0.3 | 0.5 | - | - |
+| **t** | 0.1 | 0.1 | 0.2 | 0.4 | 0.2 | - |
+| **Johannes** | 0.1 | 0.1 | 0.5 | 0.1 | 0.1 | 0.1 |
+
+The `-` entries are masked (future tokens). Notice `Johannes` attends strongly to `Name` (0.5).
+
+------------------------------------------------------------------------
+
+#### 11. Attention Output & Concatenation
+
+Each head multiplies its attention scores with the Value embeddings to produce an **attention output** — a refined representation of each token after considering context.
+
+GPT-2's 12 heads each produce a 64-dimensional output. These are **concatenated** back to 768 dimensions:
+
+```
+[Head 1 output (64)] + [Head 2 output (64)] + ... + [Head 12 output (64)] = [768]
+```
 
 ------------------------------------------------------------------------
 
 ### 12. MLP (Multi-Layer Perceptron)
 
-The attention output goes through an MLP to refine token
-representations. A Linear layer changes embedding values and size using
-learned weights and bias, then a non-linear activation decides how much
-each value passes.
+After attention, each token's embedding goes through an MLP independently. This is a simple feed-forward network:
 
-Many activation types exist; GPT-2 uses GELU, which lets small values
-pass partially and large values pass fully, helping capture both subtle
-and strong patterns.
+```
+Input (768) → Linear → GELU activation → Linear → Output (768)
+           ↓         ↓                  ↓
+         (768→3072)  (non-linearity)   (3072→768)
+```
 
-**Example (from visualization):** Linear(768 → 3072) → GELU →
-Linear(3072 → 768).
+The MLP expands to 3072 dimensions (4× larger), applies a non-linear activation (GELU), then projects back to 768. This allows the model to learn complex transformations of each token's representation.
+
+**Why expand then shrink?** The larger intermediate layer gives the network more "room" to compute complex functions before compressing back down.
 
 ------------------------------------------------------------------------
 
