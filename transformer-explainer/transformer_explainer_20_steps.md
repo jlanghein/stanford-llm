@@ -44,6 +44,13 @@ Transformer has three main parts:
     with an MLP.
 3.  **Probabilities** determine the likelihood of each next token.
 
+```mermaid
+flowchart LR
+    A[Text] --> B[Embeddings]
+    B --> C[Transformer Blocks]
+    C --> D[Probabilities]
+```
+
 ------------------------------------------------------------------------
 
 ## II. Turning Text into Numbers (Input Representation)
