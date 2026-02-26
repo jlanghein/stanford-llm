@@ -39,13 +39,10 @@ model predicts next token (e.g., `burg`).
 
 Transformer has three main parts:
 
-1.  Embeddings turn text into numbers.
-2.  Transformer blocks mix information with Self-Attention and refine it
+1.  **Embeddings** turn text into numbers.
+2.  **Transformer blocks** mix information with Self-Attention and refine it
     with an MLP.
-3.  Probabilities determine the likelihood of each next token.
-
-**Example (from visualization):** Text → token IDs → 12 stacked blocks →
-logits → softmax → 37.70% probability for `burg`.
+3.  **Probabilities** determine the likelihood of each next token.
 
 ------------------------------------------------------------------------
 
