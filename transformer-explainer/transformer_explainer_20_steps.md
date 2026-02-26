@@ -192,7 +192,40 @@ three new vectors — **Query**, **Key**, and **Value**:
 - **Key (K):** "What do I contain?"
 - **Value (V):** "What information do I pass along?"
 
-This transformation is done by multiplying the embedding with learned weight matrices.
+**The Math: How Q, K, V are computed**
+
+Each Q, K, V vector is computed by multiplying the embedding with a learned weight matrix and adding a bias:
+
+```
+Q_j = Σ(d=1 to 768) Embedding_d × W_Q[d,j] + Bias_Q[j]
+K_j = Σ(d=1 to 768) Embedding_d × W_K[d,j] + Bias_K[j]
+V_j = Σ(d=1 to 768) Embedding_d × W_V[d,j] + Bias_V[j]
+```
+
+Or in matrix form: `Q = Embedding × W_Q + Bias_Q`
+
+**Understanding the dimensions:**
+
+| Component | Dimensions | Explanation |
+|-----------|------------|-------------|
+| Input Embedding | 768 | The token's representation |
+| W_Q, W_K, W_V | 768 × 64 | Learned weight matrices (per head) |
+| Bias_Q, Bias_K, Bias_V | 64 | Learned bias vectors (per head) |
+| Output Q, K, V | 64 | Compressed representation for this head |
+
+**Why 768 → 64?** Each head gets a smaller slice (64 dimensions) to work with. Since there are 12 heads, the total is still `12 × 64 = 768`.
+
+**Example for token `Me`:**
+
+```
+Embedding of "Me": [0.13, -0.43, 0.78, ..., -0.22]  (768 numbers)
+                              ↓
+                    × W_Q (768 × 64) + Bias_Q (64)
+                              ↓
+Query vector:       [0.2, 0.1, -0.3, ..., 0.15]     (64 numbers)
+```
+
+The same embedding is multiplied by different weight matrices to get K and V:
 
 | Token | Embedding (768) | → | Q (64) | K (64) | V (64) |
 |-------|-----------------|---|--------|--------|--------|
@@ -200,7 +233,16 @@ This transformation is done by multiplying the embedding with learned weight mat
 | `in` | [0.11, -0.42, ...] | → | [0.1, 0.3, ...] | [0.2, 0.1, ...] | [0.2, -0.1, ...] |
 | ... | ... | → | ... | ... | ... |
 
-Queries compare with Keys to measure relevance, and this relevance is used to weight the Values.
+**What do Q, K, V actually represent?**
+
+Think of it like a search engine:
+- **Query:** The search term — what this token is looking for
+- **Key:** The index entry — what this token can be found under
+- **Value:** The content — what information this token provides
+
+When token `Johannes` wants to find relevant context, its Query searches through all Keys. The Key of `Name` might match well, so `Johannes` retrieves information from `Name`'s Value.
+
+Queries compare with Keys to measure relevance (via dot product), and this relevance score is used to weight how much of each Value to include.
 
 #### 7.2 Why Multiple Heads?
 
