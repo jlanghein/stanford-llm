@@ -98,13 +98,18 @@ That's it — a simple table lookup. The magic is that these 768 numbers per tok
 
 Each dimension can encode some aspect of a token's meaning. While the model learns these automatically and they're not always human-interpretable, you can imagine dimensions capturing things like:
 
-| Dimension | Possible meaning | "King" | "Queen" | "Apple" |
-|-----------|------------------|--------|---------|---------|
-| dim 1 | Royalty | 0.9 | 0.85 | -0.1 |
-| dim 2 | Gender (masc→fem) | -0.7 | 0.8 | 0.0 |
-| dim 3 | Edible | -0.2 | -0.2 | 0.95 |
-| dim 4 | Abstract concept | 0.3 | 0.3 | -0.8 |
-| ... | ... | ... | ... | ... |
+| Dimension | Possible meaning | "King" | "Queen" | "Apple" | "Name" | "Johannes" |
+|-----------|------------------|--------|---------|---------|--------|------------|
+| dim 1 | Royalty | 0.9 | 0.85 | -0.1 | -0.1 | -0.1 |
+| dim 2 | Gender (masc→fem) | -0.7 | 0.8 | 0.0 | 0.0 | -0.5 |
+| dim 3 | Edible | -0.2 | -0.2 | 0.95 | -0.3 | -0.3 |
+| dim 4 | Abstract concept | 0.3 | 0.3 | -0.8 | 0.4 | -0.2 |
+| dim 42 | Noun-ness | 0.8 | 0.8 | 0.9 | 0.85 | 0.7 |
+| dim 100 | Verb-ness | -0.3 | -0.3 | -0.4 | -0.2 | -0.3 |
+| dim 203 | Refers to person | 0.7 | 0.7 | -0.5 | 0.6 | 0.95 |
+| ... | ... | ... | ... | ... | ... | ... |
+
+Notice how "Name" and "Johannes" share similar values for "noun-ness" (both are nouns) and "refers to person" (both relate to identity), but differ in other dimensions. This similarity will become important in Section 7 when we see how attention connects related tokens.
 
 This is why vector math works on embeddings: `King - Man + Woman ≈ Queen` — the dimensions encoding gender shift while royalty stays intact.
 
