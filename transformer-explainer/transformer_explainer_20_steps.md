@@ -1,13 +1,14 @@
-# Transformer Explainer -- 20 Steps
+# Transformer Explainer -- 16 Sections
 
 ## Table of Contents
 
-- [I. The Big Picture (What is happening?)](#i-the-big-picture-what-is-happening)
-- [II. Turning Text into Numbers (Input Representation)](#ii-turning-text-into-numbers-input-representation)
-- [III. The Core Engine (Transformer Blocks)](#iii-the-core-engine-transformer-blocks)
-- [IV. Stability & Regularization (Why it trains properly)](#iv-stability--regularization-why-it-trains-properly)
-- [V. Producing the Next-Token Scores (Output Layer)](#v-producing-the-next-token-scores-output-layer)
-- [VI. Sampling Strategy (Decision Layer)](#vi-sampling-strategy-decision-layer)
+- [I. The Big Picture](#i-the-big-picture-what-is-happening) (Sections 1-3)
+- [II. Turning Text into Numbers](#ii-turning-text-into-numbers-input-representation) (Sections 4-5)
+- [III. The Core Engine](#iii-the-core-engine-transformer-blocks) (Sections 6-8)
+  - 7. Multi-Head Self Attention (with subsections 7.1-7.4)
+- [IV. Stability & Regularization](#iv-stability--regularization-why-it-trains-properly) (Sections 9-10)
+- [V. Producing the Next-Token Scores](#v-producing-the-next-token-scores-output-layer) (Sections 11-12)
+- [VI. Sampling Strategy](#vi-sampling-strategy-decision-layer) (Sections 13-16)
 
 ---
 
@@ -153,7 +154,7 @@ Newer models may use other methods like **RoPE** (Rotary Position Embedding), wh
 
 ## III. The Core Engine (Transformer Blocks)
 
-### 6. Repetitive Transformer Blocks
+### 6. Transformer Blocks
 
 A Transformer block is the main unit of processing in the model. It has two parts:
 
@@ -183,9 +184,7 @@ Self-attention lets each token "look at" all other tokens and decide which ones 
 
 In **multi-head** form, the model runs several attention processes in parallel (12 heads in GPT-2), each focusing on different patterns — one head might track grammar, another might track meaning, another might track coreference.
 
-------------------------------------------------------------------------
-
-#### 8. Query, Key, Value
+#### 7.1 Query, Key, Value
 
 To perform self-attention, each token's embedding is transformed into
 three new vectors — **Query**, **Key**, and **Value**:
@@ -204,9 +203,7 @@ This transformation is done by multiplying the embedding with learned weight mat
 
 Queries compare with Keys to measure relevance, and this relevance is used to weight the Values.
 
-------------------------------------------------------------------------
-
-#### 9. Multi-head
+#### 7.2 Why Multiple Heads?
 
 Each head works with smaller vectors (64 dimensions instead of 768). GPT-2 has **12 heads**, and `12 × 64 = 768`.
 
@@ -222,9 +219,7 @@ Why multiple heads? Each head can specialize in different patterns:
 
 This lets the model capture many types of relationships simultaneously.
 
-------------------------------------------------------------------------
-
-#### 10. Masked Self Attention
+#### 7.3 Masked Self Attention
 
 In each head, attention scores determine how much each token focuses on others:
 
@@ -245,9 +240,7 @@ In each head, attention scores determine how much each token focuses on others:
 
 The `-` entries are masked (future tokens). Notice `Johannes` attends strongly to `Name` (0.5).
 
-------------------------------------------------------------------------
-
-#### 11. Attention Output & Concatenation
+#### 7.4 Attention Output & Concatenation
 
 Each head multiplies its attention scores with the Value embeddings to produce an **attention output** — a refined representation of each token after considering context.
 
@@ -259,7 +252,7 @@ GPT-2's 12 heads each produce a 64-dimensional output. These are **concatenated*
 
 ------------------------------------------------------------------------
 
-### 12. MLP (Multi-Layer Perceptron)
+### 8. MLP (Multi-Layer Perceptron)
 
 After attention, each token's embedding goes through an MLP independently. This is a simple feed-forward network:
 
@@ -284,7 +277,7 @@ The MLP expands to 3072 dimensions (4× larger), applies a non-linear activation
 - Generalization
 - Preventing exploding activations
 
-### 13. Layer Normalization
+### 9. Layer Normalization
 
 Layer Normalization helps stabilize both training and inference by
 adjusting input numbers so their mean and variance stay consistent. This
@@ -297,7 +290,7 @@ before MLP inside each block.
 
 ------------------------------------------------------------------------
 
-### 14. Dropout
+### 10. Dropout
 
 During training, dropout randomly turns off some connections between
 numbers so the model doesn't overfit to specific patterns. This helps it
@@ -321,7 +314,7 @@ Final token embedding → 50,257 logits → probability distribution
 
 **Now the model knows how likely each token is.**
 
-### 15. Output Logit
+### 11. Output Logit
 
 After all Transformer blocks, the last token's output embedding,
 enriched with context from all previous tokens, is multiplied by learned
@@ -335,7 +328,7 @@ vocabulary---that indicate how likely each token is to come next.
 
 ------------------------------------------------------------------------
 
-### 16. Probabilities
+### 12. Probabilities
 
 Logits are just raw scores. To make them easier to interpret, we convert
 them into probabilities between 0 and 1, where all add up to 1. This
@@ -361,7 +354,7 @@ generated text.
 - Deterministic vs creative
 - Conservative vs diverse outputs
 
-### 17. Temperature
+### 13. Temperature
 
 Temperature works by scaling the logits before turning them into
 probabilities. A low temperature (e.g., 0.2) makes large logits even
@@ -375,7 +368,7 @@ competitive and leading to more creative outputs.
 
 ------------------------------------------------------------------------
 
-### 18. Top-K Sampling
+### 14. Top-K Sampling
 
 Top-K sampling filters the probability distribution by only keeping the
 K most likely tokens. This prevents the model from sampling very unlikely
@@ -388,7 +381,7 @@ tokens are candidates; others are excluded.
 
 ------------------------------------------------------------------------
 
-### 19. Top-P (Nucleus) Sampling
+### 15. Top-P (Nucleus) Sampling
 
 Top-P sampling uses a different strategy: it keeps the smallest set of
 tokens whose cumulative probability exceeds threshold P (commonly 0.9).
@@ -400,7 +393,7 @@ reaches 90%, regardless of how many that includes.
 
 ------------------------------------------------------------------------
 
-### 20. Combining Strategies
+### 16. Combining Strategies
 
 In practice, temperature, top-K, and top-P are often used together to
 balance diversity and coherence. Temperature reshapes the distribution,
