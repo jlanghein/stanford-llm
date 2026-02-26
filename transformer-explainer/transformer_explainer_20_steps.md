@@ -28,11 +28,7 @@ fundamentals.
 
 Transformers aren't magic---they build text step by step by asking:
 
-"What is the most probable next word that will follow this input?"
-
-Here we explore how a trained model generates text. Write your own text
-or use an example, then click Generate to see it in action. If the model
-isn't ready yet, try another Example.
+**"What is the most probable next word that will follow this input?"**
 
 **Example (from visualization):** Input text: `Mein Name ist Johannes` →
 model predicts next token (e.g., `burg`).
