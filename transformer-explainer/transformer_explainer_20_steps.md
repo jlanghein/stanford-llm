@@ -196,99 +196,70 @@ Let's trace this step by step for our sentence `Mein Name ist Johannes`.
 
 **Step 1: Start with our input**
 
-After embedding + positional encoding, we have 6 tokens, each with 768 dimensions:
+After embedding + positional encoding, we have 6 tokens, each with 768 dimensions. This is our **input matrix (6 × 768)**:
 
-```
-Input shape: (6, 768)
+| Token | dim 1 | dim 2 | dim 3 | dim 4 | dim 42 (noun) | dim 100 (verb) | dim 203 (person) | ... | dim 768 |
+|-------|-------|-------|-------|-------|---------------|----------------|------------------|-----|---------|
+| `Me` | 0.13 | -0.43 | 0.78 | 0.12 | 0.70 | -0.1 | 0.3 | ... | -0.22 |
+| `in` | 0.11 | -0.42 | 0.65 | 0.08 | 0.20 | -0.1 | 0.1 | ... | -0.19 |
+| `Name` | 0.17 | 0.28 | -0.54 | 0.15 | **0.85** | -0.2 | **0.6** | ... | 0.31 |
+| `is` | -0.06 | 0.21 | 0.42 | -0.05 | 0.10 | **0.8** | 0.1 | ... | 0.09 |
+| `t` | 0.26 | -0.35 | 0.11 | 0.22 | 0.15 | 0.3 | 0.0 | ... | -0.45 |
+| `Johannes` | 0.09 | -0.27 | 0.89 | 0.07 | **0.70** | -0.3 | **0.95** | ... | 0.14 |
 
-Token 0 "Me":       [0.13, -0.43, 0.78, ..., -0.22]   (768 numbers)
-Token 1 "in":       [0.11, -0.42, 0.65, ..., -0.19]   (768 numbers)
-Token 2 "Name":     [0.17, 0.28, -0.54, ..., 0.31]    (768 numbers)
-Token 3 "is":       [-0.06, 0.21, 0.42, ..., 0.09]    (768 numbers)
-Token 4 "t":        [0.26, -0.35, 0.11, ..., -0.45]   (768 numbers)
-Token 5 "Johannes": [0.09, -0.27, 0.89, ..., 0.14]    (768 numbers)
-```
+Notice: "Name" and "Johannes" both have high values for dim 42 (noun-ness) and dim 203 (refers to person).
+
+---
 
 **Step 2: The QKV weight matrix**
 
-The model has a learned weight matrix `W_qkv` that transforms embeddings into Q, K, and V.
+The model has a learned **weight matrix W_qkv (768 × 2304)** that transforms embeddings into Q, K, and V.
 
 **Where does it come from?**
 
-This matrix is **learned during training**. Just like the embedding table, GPT-2 started with random numbers and adjusted them over billions of training examples until they produced useful Q, K, V vectors.
+This matrix is **learned during training**. GPT-2 started with random numbers and adjusted them over billions of training examples.
 
-**What does it contain?**
+**The weight matrix as a table (768 rows × 2304 columns):**
 
-`W_qkv` is a matrix of **1,769,472 numbers** (768 × 2304) that the model learned. Each number is a **weight** that controls how much one input dimension influences one output dimension.
+|  | Q col 1 | Q col 2 | ... | Q col 768 | K col 1 | K col 2 | ... | K col 768 | V col 1 | V col 2 | ... | V col 768 |
+|--|---------|---------|-----|-----------|---------|---------|-----|-----------|---------|---------|-----|-----------|
+| **dim 1** | 0.02 | -0.01 | ... | 0.03 | 0.01 | 0.04 | ... | -0.02 | 0.03 | 0.01 | ... | 0.02 |
+| **dim 2** | -0.03 | 0.04 | ... | 0.01 | 0.02 | -0.01 | ... | 0.03 | -0.01 | 0.02 | ... | -0.03 |
+| **dim 3** | 0.01 | 0.02 | ... | -0.02 | -0.01 | 0.03 | ... | 0.01 | 0.02 | -0.02 | ... | 0.01 |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
+| **dim 42** (noun) | **0.70** | 0.30 | ... | 0.20 | **0.80** | 0.40 | ... | 0.10 | 0.50 | 0.40 | ... | 0.30 |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
+| **dim 203** (person) | **0.60** | 0.25 | ... | 0.15 | **0.70** | 0.35 | ... | 0.20 | 0.55 | 0.30 | ... | 0.25 |
+| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... |
+| **dim 768** | 0.02 | -0.03 | ... | 0.01 | 0.01 | 0.02 | ... | -0.01 | -0.02 | 0.01 | ... | 0.03 |
 
-**Concrete example with "Name" token:**
+The matrix has 3 sections:
+- **Columns 1-768:** Weights for computing Q ("what am I looking for?")
+- **Columns 769-1536:** Weights for computing K ("what do I contain?")
+- **Columns 1537-2304:** Weights for computing V ("what information do I carry?")
 
-Remember from Section 4, the embedding for "Name" might encode things like:
-- Dimension 42: "noun-ness" = 0.85 (high, because "Name" is a noun)
-- Dimension 100: "verb-ness" = -0.2 (low, it's not a verb)
-- Dimension 203: "refers to a person" = 0.6
+---
 
-Now, the Query vector needs to encode "what is this token looking for?" 
+**Step 3: The multiplication (how one output value is computed)**
 
-Let's say Q dimension 5 represents "looking for a name/identity". The weights determine how this is computed:
+To get **Q column 1** for token "Name", we multiply each dimension by its weight and sum:
 
-```
-For token "Name" (Token ID 6530):
+| Dimension | "Name" embedding | × | Weight (Q col 1) | = | Contribution |
+|-----------|------------------|---|------------------|---|--------------|
+| dim 1 | 0.17 | × | 0.02 | = | 0.0034 |
+| dim 2 | 0.28 | × | -0.03 | = | -0.0084 |
+| dim 3 | -0.54 | × | 0.01 | = | -0.0054 |
+| ... | ... | × | ... | = | ... |
+| **dim 42** (noun) | **0.85** | × | **0.70** | = | **0.595** |
+| ... | ... | × | ... | = | ... |
+| **dim 203** (person) | **0.60** | × | **0.60** | = | **0.36** |
+| ... | ... | × | ... | = | ... |
+| dim 768 | 0.31 | × | 0.02 | = | 0.0062 |
+| | | | **SUM** | = | **Q[1] = 1.23** |
 
-Embedding of "Name": [... , 0.85, ... , -0.2, ... , 0.6, ...]
-                          dim 42    dim 100    dim 203
+This single value (1.23) is just the first of 768 Q values for "Name". We repeat this for all 768 Q columns, then all 768 K columns, then all 768 V columns.
 
-To compute Q[5] ("looking for a name"):
-
-Q[5] = Embedding[0] × W[0,5] + Embedding[1] × W[1,5] + ... + Embedding[767] × W[767,5]
-
-     = ... + 0.85 × 0.7  + ... + (-0.2) × 0.1 + ... + 0.6 × 0.8 + ...
-             ────────────         ──────────         ──────────
-             noun-ness            verb-ness          person-ref
-             contributes          contributes        contributes
-             strongly             a little           strongly
-
-     = 0.92 (example result: "Name" strongly looks for identity-related tokens)
-```
-
-The model learned these weights so that:
-- Nouns like "Name" produce Queries that search for related content
-- The same "Name" token produces a Key that says "I contain a noun/label"
-- And a Value that carries the actual meaning to pass along
-
-```
-W_qkv shape: (768, 2304)
-
-         Output dimensions (2304)
-         ┌─────────────────────────────────────────────────────┐
-         │  Q part (768)  │  K part (768)  │  V part (768)    │
-         │ "what I seek"  │ "what I am"    │ "what I offer"   │
-         │ col 0...767    │ col 768...1535 │ col 1536...2303  │
-    ┌────┼────────────────┼────────────────┼──────────────────┤
-    │ 0  │  0.02  -0.01   │  0.03   0.05   │  -0.02   0.01    │
-I   │ 1  │ -0.03   0.04   │  0.01  -0.02   │   0.04   0.03    │
-n   │...│   ...   ...    │  ...    ...    │   ...    ...     │
-p   │ 42│  0.70   0.30   │  0.80   0.10   │   0.50   0.40    │ ← "noun-ness" row
-u   │...│   ...   ...    │  ...    ...    │   ...    ...     │
-t   │767│  0.02  -0.03   │  0.02   0.01   │  -0.01   0.02    │
-    └────┴────────────────┴────────────────┴──────────────────┘
-(768)
-```
-
-**Why 2304 columns?**
-
-```
-2304 = 768 + 768 + 768
-       ───   ───   ───
-        Q     K     V
-
-Each of Q, K, V needs 768 dimensions, so we produce all three at once.
-```
-
-**Full example for "Johannes" token:**
-
-```
-Embedding of "Johannes": [0.09, -0.27, 0.89, ..., 0.14]  (768 numbers)
+**Key insight:** Because "Name" has high noun-ness (0.85) and high person-reference (0.60), and the weights for Q col 1 are high for these dimensions (0.70 and 0.60), "Name" gets a high Q[1] value. The model learned these weights to make nouns/names produce certain query patterns.
 
 After × W_qkv:
 
@@ -301,56 +272,94 @@ This is why later, when computing attention, "Johannes" (via its Q) will find "N
 
 **Step 3: Matrix multiplication**
 
-Each token's embedding (768) is multiplied by W_qkv (768 × 2304):
-
-```
-For token "Me":
-[0.13, -0.43, ..., -0.22] × W_qkv = [q1, q2, ..., q768, k1, k2, ..., k768, v1, v2, ..., v768]
-       (768)              (768×2304)                        (2304)
-```
+---
 
 **Step 4: Result for all tokens**
 
-After multiplying all 6 tokens by the weight matrix:
+After multiplying all 6 tokens by the weight matrix, we get the **QKV matrix (6 × 2304)**:
 
-```
-Output shape: (6, 2304)
+| Token | Q col 1 | Q col 2 | ... | Q col 768 | K col 1 | K col 2 | ... | K col 768 | V col 1 | V col 2 | ... | V col 768 |
+|-------|---------|---------|-----|-----------|---------|---------|-----|-----------|---------|---------|-----|-----------|
+| `Me` | 0.45 | -0.23 | ... | 0.12 | 0.34 | 0.56 | ... | -0.18 | 0.67 | 0.23 | ... | 0.45 |
+| `in` | 0.23 | 0.12 | ... | -0.34 | 0.18 | -0.29 | ... | 0.42 | 0.31 | -0.15 | ... | 0.28 |
+| `Name` | **1.23** | 0.89 | ... | 0.67 | **1.45** | 0.72 | ... | 0.38 | 0.92 | 0.48 | ... | 0.71 |
+| `is` | 0.34 | -0.45 | ... | 0.23 | 0.28 | 0.19 | ... | -0.31 | 0.43 | 0.22 | ... | 0.19 |
+| `t` | 0.19 | 0.08 | ... | -0.12 | 0.15 | -0.22 | ... | 0.27 | 0.25 | -0.18 | ... | 0.33 |
+| `Johannes` | **1.18** | 0.95 | ... | 0.72 | **1.52** | 0.81 | ... | 0.45 | 0.98 | 0.53 | ... | 0.78 |
 
-Token 0 "Me":       [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
-Token 1 "in":       [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
-Token 2 "Name":     [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
-Token 3 "is":       [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
-Token 4 "t":        [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
-Token 5 "Johannes": [q₀, q₁, ..., q₇₆₇, k₀, k₁, ..., k₇₆₇, v₀, v₁, ..., v₇₆₇]
-                    |____Q (768)____||____K (768)____||____V (768)____|
-```
+Notice: "Name" and "Johannes" have similar high values in Q and K columns (highlighted) because they share similar embedding features (both nouns referring to people).
+
+---
 
 **Step 5: Split into Q, K, V**
 
-We split the 2304 dimensions into three parts:
+We split the 2304 columns into three separate matrices:
 
-```
-Q shape: (6, 768)  ← dimensions 0-767
-K shape: (6, 768)  ← dimensions 768-1535  
-V shape: (6, 768)  ← dimensions 1536-2303
-```
+**Q matrix (6 × 768)** — "What is each token looking for?"
+
+| Token | Q col 1 | Q col 2 | ... | Q col 768 |
+|-------|---------|---------|-----|-----------|
+| `Me` | 0.45 | -0.23 | ... | 0.12 |
+| `in` | 0.23 | 0.12 | ... | -0.34 |
+| `Name` | **1.23** | 0.89 | ... | 0.67 |
+| `is` | 0.34 | -0.45 | ... | 0.23 |
+| `t` | 0.19 | 0.08 | ... | -0.12 |
+| `Johannes` | **1.18** | 0.95 | ... | 0.72 |
+
+**K matrix (6 × 768)** — "What does each token contain?"
+
+| Token | K col 1 | K col 2 | ... | K col 768 |
+|-------|---------|---------|-----|-----------|
+| `Me` | 0.34 | 0.56 | ... | -0.18 |
+| `in` | 0.18 | -0.29 | ... | 0.42 |
+| `Name` | **1.45** | 0.72 | ... | 0.38 |
+| `is` | 0.28 | 0.19 | ... | -0.31 |
+| `t` | 0.15 | -0.22 | ... | 0.27 |
+| `Johannes` | **1.52** | 0.81 | ... | 0.45 |
+
+**V matrix (6 × 768)** — "What information does each token carry?"
+
+| Token | V col 1 | V col 2 | ... | V col 768 |
+|-------|---------|---------|-----|-----------|
+| `Me` | 0.67 | 0.23 | ... | 0.45 |
+| `in` | 0.31 | -0.15 | ... | 0.28 |
+| `Name` | 0.92 | 0.48 | ... | 0.71 |
+| `is` | 0.43 | 0.22 | ... | 0.19 |
+| `t` | 0.25 | -0.18 | ... | 0.33 |
+| `Johannes` | 0.98 | 0.53 | ... | 0.78 |
+
+---
 
 **Step 6: Reshape for 12 heads**
 
-Each 768-dimensional Q, K, V is split into 12 heads of 64 dimensions each:
+Each 768-column matrix is split into 12 heads of 64 columns each:
 
-```
-Q reshaped: (6, 12, 64)  → 6 tokens, 12 heads, 64 dims per head
-K reshaped: (6, 12, 64)
-V reshaped: (6, 12, 64)
-```
+**Q for Head 1 (6 × 64)** — uses Q columns 1-64:
 
-**The complete transformation:**
+| Token | Q col 1 | Q col 2 | ... | Q col 64 |
+|-------|---------|---------|-----|----------|
+| `Me` | 0.45 | -0.23 | ... | 0.18 |
+| `in` | 0.23 | 0.12 | ... | -0.09 |
+| `Name` | 1.23 | 0.89 | ... | 0.45 |
+| `is` | 0.34 | -0.45 | ... | 0.11 |
+| `t` | 0.19 | 0.08 | ... | -0.15 |
+| `Johannes` | 1.18 | 0.95 | ... | 0.52 |
 
-```
-(6, 768)  →  × W_qkv  →  (6, 2304)  →  split  →  Q(6,768), K(6,768), V(6,768)  →  reshape  →  (6, 12, 64) each
- input       (768×2304)    QKV combined           separate Q, K, V                            per head
-```
+**Q for Head 2 (6 × 64)** — uses Q columns 65-128, and so on...
+
+Each head now has its own Q, K, V matrices of shape (6 × 64). This allows each head to learn different patterns (see section 7.2).
+
+---
+
+**Summary: The complete transformation**
+
+| Step | Shape | Description |
+|------|-------|-------------|
+| Input | (6, 768) | 6 tokens, each with 768-dim embedding |
+| × W_qkv | (768, 2304) | Weight matrix (learned) |
+| = QKV | (6, 2304) | Combined Q, K, V for all tokens |
+| Split | 3 × (6, 768) | Separate Q, K, V matrices |
+| Reshape | 3 × (6, 12, 64) | Split into 12 heads |
 
 **What are Q, K, V used for?**
 
