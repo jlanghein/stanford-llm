@@ -94,22 +94,6 @@ Embedding Table (learned during training):
 
 That's it — a simple table lookup. The magic is that these 768 numbers per token were **learned during training** to capture useful meaning.
 
-```mermaid
-flowchart LR
-    A["Mein Name ist Johannes"] --> B[Tokenizer]
-    B --> C["Me, in, Name, is, t, Johannes"]
-    C --> D[Token IDs]
-    D --> E["6 vectors of size 768"]
-```
-
-```mermaid
-flowchart LR
-    A["Mein Name ist Johannes"] --> B[Tokenizer]
-    B --> C["Me, in, Name, is, t, Johannes"]
-    C --> D[Token IDs]
-    D --> E["6 vectors of size 768"]
-```
-
 ------------------------------------------------------------------------
 
 ### 5. Positional Encoding
